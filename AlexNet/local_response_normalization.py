@@ -121,6 +121,8 @@ class LocalResponseNormalization:
 
 
     def forward3(self, a):
+        device = a.device
+        print("\tTHe device is {}".format(device))
         if a.dim() == 3:  # (C, H, W)
             a = a.unsqueeze(0)  # Add batch dimension, now (1, C, H, W)
         elif a.dim() != 4:
@@ -137,20 +139,24 @@ class LocalResponseNormalization:
         
         # Pad the input along the channel dimension (n // 2 on both sides)
         padding = self.n // 2
-        squared_a_padded = F.pad(squared_a, (0, 0, 0, 0, padding, padding), mode='constant', value=0)
+        squared_a_padded = F.pad(squared_a, (0, 0, 0, 0, padding, padding), mode='constant', value=0).to(device)
         print(f"\t Squared padded input shape: {squared_a_padded.squeeze().shape}")
+        print("\t The Squared_a_padded resides in the device: ", squared_a_padded.device)
 
         # Perform convolution to get the sum of squared values in the local channel window
         squared_sum = F.conv2d(squared_a_padded, kernel, stride=1, padding=0, groups=1)
         print(f"\t Squared sum shape: {squared_sum.squeeze().shape}")
+        print("\t The Squared_sum resides in the device: ", squared_sum.device)
 
         # Compute the normalization denominator
-        denominator = torch.pow(self.k + (self.alpha / self.n) * squared_sum, self.beta)
+        denominator = torch.pow(self.k + (self.alpha / self.n) * squared_sum, self.beta).to(device)
         print(f"\t Denominator shape: {denominator.squeeze().shape}")
+        print("\t The denominator resides in the device: ", denominator.device)
 
         # Normalize the input
         normalized_a = a / denominator
         print(f"\t Normalized shape: {normalized_a.squeeze().shape}")
+        print("\t The normalized_a resides in the device: ", normalized_a.device)
 
         return normalized_a.view_as(a)
 
