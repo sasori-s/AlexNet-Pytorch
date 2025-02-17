@@ -6,6 +6,7 @@ from torchvision import datasets
 from torchvision.transforms import v2
 from PIL import Image
 from fancypca import FancyPCA
+from torch.utils.data import DataLoader, Dataset
 
 class LoadDataset:
     def __init__(self, train_path, test_path=None):
@@ -37,8 +38,9 @@ class LoadDataset:
         if not single_image:
             train_dataset = datasets.ImageFolder(self.train_path, transform=train_transform)
             test_dataset = datasets.ImageFolder(self.test_path, transform=test_transform)
-            print("\033[92m", type(train_dataset[0][0]), "\033[0m")
-            print("\033[92m", type(test_dataset[0][0]), "\033[0m")
+            test_dataset = MyDataSet(test_dataset)
+            print("\033[92m", len(train_dataset), "\033[0m")
+            print("\033[92m", len(test_dataset), "\033[0m")
 
             self.train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=32, shuffle=True)
             self.test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=32, shuffle=False)
@@ -77,14 +79,15 @@ class LoadDataset:
                     image, label = test_dataset[sample_index]
                     # print(f"The shape of the image is {image.shape}" )
                     figure.add_subplot(rows, cols, i + 1)
-                    plt.title(test_dataset.classes[label])
+                    plt.title(test_dataset.data.classes[label])
+                    # plt.title(label)
                     plt.axis('off')
-                    plt.imshow(np.asarray(image[2].permute(1, 2, 0)).squeeze())
+                    plt.imshow(np.asarray(image.permute(1, 2, 0)).squeeze())
                 
                 plt.show()
             else:
                 for i in range(9):
-                    sample_index = torch.randint(len(self.test_loader.dataset), size=(1,)).item()
+                    sample_index = torch.randint(len(self.train_loader.dataset), size=(1,)).item()
                     image, label = train_dataset[sample_index]
                     # print(f"The shape of the image is {image.shape}" )
                     figure.add_subplot(rows, cols, i + 1)
@@ -106,6 +109,21 @@ class LoadDataset:
             else:
                 plt.imshow(np.asarray(train_dataset.permute(1, 2, 0)).squeeze())
                 plt.show()
+
+
+class MyDataSet(Dataset):
+    def __init__(self, data):
+        self.data = data
+    
+    def __len__(self):
+        return len(self.data) * 5
+    
+    def __getitem__(self, index):
+        original_image_index = index // 5
+        crop_index = index % 5
+        stack_image_tensor, label = self.data[original_image_index]
+        image_tensor = stack_image_tensor[crop_index]
+        return image_tensor, label
 
 
 class RandomFlipOnFiveCrop:
