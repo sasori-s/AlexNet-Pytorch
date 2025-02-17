@@ -42,8 +42,8 @@ class LoadDataset:
             print("\033[92m", len(train_dataset), "\033[0m")
             print("\033[92m", len(test_dataset), "\033[0m")
 
-            self.train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=32, shuffle=True)
-            self.test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=32, shuffle=False)
+            self.train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=32, shuffle=True, pin_memory=True)
+            self.test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=32, shuffle=False, pin_memory=True)
 
             self._show_images(test_dataset=test_dataset)
             self._show_images(train_dataset=train_dataset)

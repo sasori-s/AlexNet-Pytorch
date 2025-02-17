@@ -61,9 +61,9 @@ class Model(nn.Module):
 
 
 if __name__ == '__main__':
-    device = torch.device('cpu')
+    device = torch.device("cuda" if torch.cuda.is_available() else 'cpu')
     model = Model()
     model.to(device)
     input = torch.randn(1, 3, 227, 227).to(device)
     model(input)
-    print(summary(model, (3, 227, 227), device='cpu'))
+    print(summary(model, (3, 227, 227)))
