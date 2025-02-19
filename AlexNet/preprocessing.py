@@ -45,8 +45,8 @@ class LoadDataset:
             self.train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=32, shuffle=True, pin_memory=True)
             self.test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=32, shuffle=False, pin_memory=True)
 
-            self._show_images(test_dataset=test_dataset)
-            self._show_images(train_dataset=train_dataset)
+            # self._show_images(test_dataset=test_dataset)
+            # self._show_images(train_dataset=train_dataset)
             return self.train_loader, self.test_loader
         
         else:
@@ -155,3 +155,8 @@ if __name__ == '__main__':
     data_path = '/mnt/A4F0E4F6F0E4D01A/Shams Iqbal/VS code/Kaggle/Datasets/animal_dataset/animals/animals'
     load_dataset = LoadDataset(data_path, data_path)
     train_loader, test_loader = load_dataset.augment_dataset(single_image=False)
+    
+    it = iter(train_loader)
+    image, label = next(it)
+    print(image.shape)
+    print(label)
