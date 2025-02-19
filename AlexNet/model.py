@@ -18,7 +18,7 @@ class Model(nn.Module):
         self.conv4 = nn.Conv2d(384, 384, kernel_size=3, padding=2)
         self.conv5 = nn.Conv2d(384, 256, kernel_size=3, padding=2)
         self.pool3 = nn.MaxPool2d(kernel_size=3, stride=2)
-        self.fc1 = nn.Linear(256 * 9 * 9, 4096)
+        self.fc1 = nn.Linear(256 * 6 * 6, 4096)
         self.fc2 = nn.Linear(4096, 4096)
         self.fc3 = nn.Linear(4096, self.num_classes)
         self.dropout = nn.Dropout(0.5)
@@ -48,6 +48,7 @@ class Model(nn.Module):
 
         x = x.view(x.size(0), -1)
 
+        print("\tTHe shape of the x after the conv5 with reshaping is {}".format(x.shape))
         x = self.fc1(x)
         x = self.relu(x)
         x = self.dropout(x)
@@ -65,6 +66,6 @@ if __name__ == '__main__':
     print("\tTHe device is {}".format(device))
     model = Model()
     model.to(device)
-    input = torch.randn(1, 3, 227, 227).to(device)
+    input = torch.randn(32, 3, 224, 224).to(device)
     model(input)
     print(summary(model, (3, 227, 227)))

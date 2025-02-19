@@ -45,7 +45,6 @@ class TrainModel(nn.Module):
         for name, param in self.model.named_parameters():
             if 'weight' in name:
                 torch.nn.init.normal_(param.data, mean=0, std=0.01)
-                print("{} : {}".format(name, param.shape))
 
             if 'bias' in name:
                 if name in bias_to_zero:
@@ -78,9 +77,15 @@ class TrainModel(nn.Module):
         current_loss /= len(self.train_loader)
         current_accuracy /= len(self.train_loader)
         return current_loss, current_accuracy
+        #Do not forget to include the scheduler.step() in the run funciton. 
             
     
+    def validate_epoch(self):
+        pass
+
+
 
 if __name__ == '__main__':
     data_path = "/mnt/A4F0E4F6F0E4D01A/Shams Iqbal/VS code/Kaggle/Datasets/animal_dataset/animals/animals"
     train_model = TrainModel(data_path)
+    train_model.train_epoch()
