@@ -64,9 +64,7 @@ class LoadDataset:
         for i in range(len(dataset)):
             pass
 
-        
 
-    
     def _show_images(self, train_dataset=None, test_dataset=None, single_image=False):
 
         if not single_image:
