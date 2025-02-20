@@ -75,16 +75,40 @@ class TrainModel(nn.Module):
             loss.backward()
             self.optimizer.step()
             current_loss += loss.item()
+            # print("\033[92m[INFO] The argmax of the prediction is {}".format(pred.argmax(1).shape), "\033[0m")
             current_accuracy += (pred.argmax(1) == labels).float().mean().item() 
         
         current_loss /= len(self.train_loader)
         current_accuracy /= len(self.train_loader)
+
+        self.train_accuracy.append(current_accuracy)
+        self.train_loss.append(current_loss)
+        self.validate_epoch()
+        self.scheduler.step(current_loss)
         return current_loss, current_accuracy
         #Do not forget to include the scheduler.step() in the run funciton. 
             
     
     def validate_epoch(self):
-        pass
+        self.model.eval()
+        current_loss = 0.0
+        current_accuracy = 0.0
+
+        with torch.no_grad():
+            for idx, batch in tqdm(enumerate(self.test_loader), desc='Validation'):
+                images, labels = self.to_device(batch)
+                pred = self.model(images)
+                loss = self.loss(pred, labels)
+                current_loss += loss.item()
+                current_accuracy += (pred.argmax(1) == labels).float().mean().item()
+
+            current_loss /= len(self.test_loader)
+            current_accuracy /= len(self.test_loader)
+            
+            self.val_accuracy.append(current_accuracy)
+            self.val_loss.append(current_loss)
+
+            return current_loss, current_accuracy
 
 
 
