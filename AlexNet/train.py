@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from model import Model
 from preprocessing import LoadDataset
@@ -23,7 +24,7 @@ class TrainModel(nn.Module):
         self.model.to(self.device)
         self.optimizer = torch.optim.SGD(self.model.parameters(), lr=self.learning_rate, momentum=self.momentum, weight_decay=self.weight_decay)
         self.scheduler = ReduceLROnPlateau(self.optimizer, mode='min', factor=0.1, patience=10)
-        self.loss = nn.MSELoss()
+        self.loss = nn.CrossEntropyLoss()
         self.best_loss = float('inf')
         self.best_accuracy = 0.0
         self.train_loss, self.val_loss = [], []
@@ -67,6 +68,8 @@ class TrainModel(nn.Module):
         for idx, batch in tqdm(enumerate(self.train_loader), desc='Training'):
             images, labels = self.to_device(batch)
             pred = self.model(images)
+            # print("\033[92m[INFO] The shape of the prediction is ", pred.shape, "\033[0m")
+            # print("\033[92m[INFO] The shape of the labels is ", F.one_hot(labels, num_classes=90).shape, "\033[0m")
             loss = self.loss(pred, labels)
             self.optimizer.zero_grad()
             loss.backward()

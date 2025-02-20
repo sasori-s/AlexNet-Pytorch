@@ -9,9 +9,10 @@ from fancypca import FancyPCA
 from torch.utils.data import DataLoader, Dataset
 
 class LoadDataset:
-    def __init__(self, train_path, test_path=None):
+    def __init__(self, train_path, test_path=None, batch_size=128):
         self.train_path = train_path
         self.test_path = test_path
+        self.batch_size = batch_size
 
 
     def augment_dataset(self, single_image = False, single_image_path="/mnt/A4F0E4F6F0E4D01A/Shams Iqbal/VS code/Kaggle/Datasets/animal_dataset/animals/animals/antelope/0c16ef86c0.jpg"):
@@ -42,8 +43,8 @@ class LoadDataset:
             print("\033[92m", len(train_dataset), "\033[0m")
             print("\033[92m", len(test_dataset), "\033[0m")
 
-            self.train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=32, shuffle=True, pin_memory=True)
-            self.test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=32, shuffle=False, pin_memory=True)
+            self.train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True, pin_memory=True)
+            self.test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=self.batch_size, shuffle=False, pin_memory=True)
 
             # self._show_images(test_dataset=test_dataset)
             # self._show_images(train_dataset=train_dataset)
