@@ -29,6 +29,8 @@ class TrainModel(nn.Module):
         self.best_accuracy = 0.0
         self.train_loss, self.val_loss = [], []
         self.train_accuracy, self.val_accuracy = [], []
+        self.not_improved = 0
+        self.patience = 10
 
     
     def load_train_test_data(self):
@@ -83,8 +85,6 @@ class TrainModel(nn.Module):
 
         self.train_accuracy.append(current_accuracy)
         self.train_loss.append(current_loss)
-        self.validate_epoch()
-        self.scheduler.step(current_loss)
         return current_loss, current_accuracy
         #Do not forget to include the scheduler.step() in the run funciton. 
             
@@ -110,12 +110,15 @@ class TrainModel(nn.Module):
 
             return current_loss, current_accuracy
         
+        
     def save_best_model(self, current_loss, current_accuracy):
         if current_loss < self.best_loss:
+            self.not_improved = 0
             self.best_loss = current_loss
             self.best_accuracy = current_accuracy
+            save_path = "best_model.pth"
 
-            print("\033[97m [SAVING INFO] Saving the best model with loss: {}:.3f and accuracy: {}:.3f \033[0m]".format(self.best_loss, self.best_accuracy))
+            print("\033[97m [SAVING INFO] Saving the best model with loss: {:.3f} and accuracy: {:.3f} \033[0m]".format(self.best_loss, self.best_accuracy))
             torch.save(
                 {
                     'epoch' : self.epoch,
@@ -123,11 +126,21 @@ class TrainModel(nn.Module):
                     'optimizer_state_dict' : self.optimizer.state_dict(),
                     'loss' : current_loss,
                     'accuracy' : current_accuracy
-                }
+                }, save_path
             )
+
+        else:
+            self.not_improved += 1
+            print("\033[91m [PATIENCE INFO] The model has not been improved for {} epochs \033[0m".format(self.not_improved))
+            if self.not_improved >= self.patience:
+                print("\033[91m [STOP INFO] Stopping the trainining after {} epochs\n Saving the final model \033[0m".format(self.patience))
+                self.save_final_model()
+                exit()
+    
     
     def save_final_model(self):
         print("\033[98m [SAVING INFO] Saving the final model")
+        save_path = "final_model.pth"
         torch.save(
             {
                 'epoch' : self.epoch,
@@ -135,16 +148,35 @@ class TrainModel(nn.Module):
                 'optimizer_state_dict' : self.optimizer.state_dict(),
                 'loss' : self.best_loss,
                 'accuracy' : self.best_accuracy
-            }
+            }, save_path
         )
 
 
     def verbose(self, epoch, train_loss, train_acc, val_loss, val_acc):
-        print("\033[95m ==> Epoch {}: Training Accuracy --> {}:.3f || Training Loss --> {}:.3f \033[0m".format(epoch, train_acc, train_loss))
-        print("\033[95m ==> Epoch {}: Validation Accuracy --> {}:.3f || Validation Loss --> {}:.3f \033[0m".format(epoch, val_acc, val_loss))
-        print("\033[95m ==> Best Accuracy: {}:.3f || Best Loss: {}:.3f \033[0m\n".format(self.best_accuracy, self.best_loss))
+        print("\033[95m ==> Epoch {}: Training Accuracy --> {:.3f} || Training Loss --> {:.3f} \033[0m".format(epoch, train_acc, train_loss))
+        print("\033[95m ==> Epoch {}: Validation Accuracy --> {:.3f} || Validation Loss --> {:.3f} \033[0m".format(epoch, val_acc, val_loss))
+        print("\033[95m ==> Best Accuracy: {:.3f} || Best Loss: {:.3f} \033[0m\n".format(self.best_accuracy, self.best_loss))
+
+    
+    def run(self):
+        print("\033[92m [INFO] Starting the tranining process \033[0m ")
+        for epoch in range(1, self.epoch + 1):
+            train_loss, train_acc = self.train_epoch()
+            val_loss, val_acc = self.validate_epoch()
+            self.scheduler.step(val_loss)
+            self.verbose(epoch, train_loss, train_acc, val_loss, val_acc)
+            self.save_best_model(val_loss, val_acc)
+
+        print("\033[92m [INFO] Training has been completed \033[0m")
+        self.save_final_model()
+        return self.train_loss, self.train_accuracy, self.val_loss, self.val_accuracy
+    
+
+    def __call__(self):
+        return self.run()
+
 
 if __name__ == '__main__':
     data_path = "/mnt/A4F0E4F6F0E4D01A/Shams Iqbal/VS code/Kaggle/Datasets/animal_dataset/animals/animals"
     train_model = TrainModel(data_path)
-    train_model.train_epoch()
+    train_model()
