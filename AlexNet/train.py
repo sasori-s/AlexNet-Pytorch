@@ -109,8 +109,40 @@ class TrainModel(nn.Module):
             self.val_loss.append(current_loss)
 
             return current_loss, current_accuracy
+        
+    def save_best_model(self, current_loss, current_accuracy):
+        if current_loss < self.best_loss:
+            self.best_loss = current_loss
+            self.best_accuracy = current_accuracy
+
+            print("\033[97m [SAVING INFO] Saving the best model with loss: {}:.3f and accuracy: {}:.3f \033[0m]".format(self.best_loss, self.best_accuracy))
+            torch.save(
+                {
+                    'epoch' : self.epoch,
+                    'model_state_dict' : self.model.state_dict(),
+                    'optimizer_state_dict' : self.optimizer.state_dict(),
+                    'loss' : current_loss,
+                    'accuracy' : current_accuracy
+                }
+            )
+    
+    def save_final_model(self):
+        print("\033[98m [SAVING INFO] Saving the final model")
+        torch.save(
+            {
+                'epoch' : self.epoch,
+                'model_state_dict' : self.model.state_dict(),
+                'optimizer_state_dict' : self.optimizer.state_dict(),
+                'loss' : self.best_loss,
+                'accuracy' : self.best_accuracy
+            }
+        )
 
 
+    def verbose(self, epoch, train_loss, train_acc, val_loss, val_acc):
+        print("\033[95m ==> Epoch {}: Training Accuracy --> {}:.3f || Training Loss --> {}:.3f \033[0m".format(epoch, train_acc, train_loss))
+        print("\033[95m ==> Epoch {}: Validation Accuracy --> {}:.3f || Validation Loss --> {}:.3f \033[0m".format(epoch, val_acc, val_loss))
+        print("\033[95m ==> Best Accuracy: {}:.3f || Best Loss: {}:.3f \033[0m\n".format(self.best_accuracy, self.best_loss))
 
 if __name__ == '__main__':
     data_path = "/mnt/A4F0E4F6F0E4D01A/Shams Iqbal/VS code/Kaggle/Datasets/animal_dataset/animals/animals"
