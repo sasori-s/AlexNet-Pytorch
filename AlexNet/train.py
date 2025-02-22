@@ -7,7 +7,7 @@ from preprocessing import LoadDataset
 from tqdm import tqdm
 
 class TrainModel(nn.Module):
-    def __init__(self, data_path, momentum=0.9, batch_size=128, weight_decay=0.0005, learning_rate=0.01, epoch=90, num_classes=90):
+    def __init__(self, data_path, momentum=0.9, batch_size=128, weight_decay=0.0005, learning_rate=0.1, epoch=90, num_classes=90):
         super(TrainModel, self).__init__()
         self.data_path = data_path
         self.momentum = momentum
@@ -73,14 +73,14 @@ class TrainModel(nn.Module):
             # print("\033[92m[INFO] The shape of the prediction is ", pred.shape, "\033[0m")
             # print("\033[92m[INFO] The shape of the labels is ", F.one_hot(labels, num_classes=90).shape, "\033[0m")
             loss = self.loss(pred, labels)
-            print("\033[90m [LOSS INFO {}th iteration] The training loss is {:.3f} \033[0m".format(idx, loss.item()))
+            print("\033[92m [LOSS INFO {}th iteration] The training loss is {:.3f} \033[0m".format(idx, loss.item()))
             self.optimizer.zero_grad()
             loss.backward()
             self.optimizer.step()
             current_loss += loss.item()
             # print("\033[92m[INFO] The argmax of the prediction is {}".format(pred.argmax(1).shape), "\033[0m")
             current_accuracy += (pred.argmax(1) == labels).float().mean().item()
-            print("\033[90m [ACCURACY INFO {}th iteration] The training accuracy is {:.3f} \033[0m".format(idx, (pred.argmax(1) == labels).float().mean().item()))
+            print("\033[101m [ACCURACY INFO {}th iteration] The training accuracy is {} \033[0m".format(idx, (pred.argmax(1) == labels).float().mean().item()))
         
         current_loss /= len(self.train_loader)
         current_accuracy /= len(self.train_loader)
@@ -101,10 +101,10 @@ class TrainModel(nn.Module):
                 images, labels = self.to_device(batch)
                 pred = self.model(images)
                 loss = self.loss(pred, labels)
-                print("\033[90m [LOSS INFO {}th iteration] The validation loss is {:.3f} \033[0m".format(idx, loss.item()))
+                print("\033[98m [LOSS INFO {}th iteration] The validation loss is {:.3f} \033[0m".format(idx, loss.item()))
                 current_loss += loss.item()
                 current_accuracy += (pred.argmax(1) == labels).float().mean().item()
-                print("\033[90m [ACCURACY INFO {}th iteration] The validation accuracy is {:.3f} \033[0m".format(idx, (pred.argmax(1) == labels).float().mean().item()))
+                print("\033[98m [ACCURACY INFO {}th iteration] The validation accuracy is {:.3f} \033[0m".format(idx, (pred.argmax(1) == labels).float().mean().item()))
 
             current_loss /= len(self.test_loader)
             current_accuracy /= len(self.test_loader)
