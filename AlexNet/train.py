@@ -73,12 +73,14 @@ class TrainModel(nn.Module):
             # print("\033[92m[INFO] The shape of the prediction is ", pred.shape, "\033[0m")
             # print("\033[92m[INFO] The shape of the labels is ", F.one_hot(labels, num_classes=90).shape, "\033[0m")
             loss = self.loss(pred, labels)
+            print("\033[90m [LOSS INFO {}th iteration] The training loss is {:.3f} \033[0m".format(idx, loss.item()))
             self.optimizer.zero_grad()
             loss.backward()
             self.optimizer.step()
             current_loss += loss.item()
             # print("\033[92m[INFO] The argmax of the prediction is {}".format(pred.argmax(1).shape), "\033[0m")
-            current_accuracy += (pred.argmax(1) == labels).float().mean().item() 
+            current_accuracy += (pred.argmax(1) == labels).float().mean().item()
+            print("\033[90m [ACCURACY INFO {}th iteration] The training accuracy is {:.3f} \033[0m".format(idx, (pred.argmax(1) == labels).float().mean().item()))
         
         current_loss /= len(self.train_loader)
         current_accuracy /= len(self.train_loader)
@@ -99,8 +101,10 @@ class TrainModel(nn.Module):
                 images, labels = self.to_device(batch)
                 pred = self.model(images)
                 loss = self.loss(pred, labels)
+                print("\033[90m [LOSS INFO {}th iteration] The validation loss is {:.3f} \033[0m".format(idx, loss.item()))
                 current_loss += loss.item()
                 current_accuracy += (pred.argmax(1) == labels).float().mean().item()
+                print("\033[90m [ACCURACY INFO {}th iteration] The validation accuracy is {:.3f} \033[0m".format(idx, (pred.argmax(1) == labels).float().mean().item()))
 
             current_loss /= len(self.test_loader)
             current_accuracy /= len(self.test_loader)
@@ -116,7 +120,7 @@ class TrainModel(nn.Module):
             self.not_improved = 0
             self.best_loss = current_loss
             self.best_accuracy = current_accuracy
-            save_path = "best_model.pth"
+            save_path = "AlexNet/best_model.pth"
 
             print("\033[97m [SAVING INFO] Saving the best model with loss: {:.3f} and accuracy: {:.3f} \033[0m]".format(self.best_loss, self.best_accuracy))
             torch.save(
@@ -140,7 +144,7 @@ class TrainModel(nn.Module):
     
     def save_final_model(self):
         print("\033[98m [SAVING INFO] Saving the final model")
-        save_path = "final_model.pth"
+        save_path = "AlexNet/final_model.pth"
         torch.save(
             {
                 'epoch' : self.epoch,
