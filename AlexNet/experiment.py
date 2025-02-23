@@ -31,7 +31,7 @@ class Trial(nn.Module):
         for image in self.pil_images:
             image = TF.pil_to_tensor(image).to(torch.float).to(self.device)
             model_output = self.model(image)
-            print("\033[92m[OUTPUT] The output of the model is {} \033[0m".format(model_output.argmax(1) == label))
+            print("\033[92m[OUTPUT] The output of the model is {} \033[0m".format(model_output.argmax(1).item()))
             
 
 
