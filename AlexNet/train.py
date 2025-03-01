@@ -10,7 +10,7 @@ from colorama import Fore, Style, init
 init(autoreset=True)
 
 class TrainModel(nn.Module):
-    def __init__(self, data_path, momentum=0.9, batch_size=128, weight_decay=0.0005, learning_rate=0.0001, epoch=90, num_classes=90):
+    def __init__(self, data_path, momentum=0.9, batch_size=128, weight_decay=0.0005, learning_rate=0.1, epoch=90, num_classes=90):
         super(TrainModel, self).__init__()
         self.data_path = data_path
         self.momentum = momentum
@@ -76,12 +76,8 @@ class TrainModel(nn.Module):
             loss = self.loss(pred, labels)
             print("\033[92m [LOSS INFO {}th iteration] The training loss is {:.3f} \033[0m".format(idx, loss.item()))
             loss.backward()
+            torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=1)
             self.optimizer.step()
-
-            for param in self.optimizer.param_groups[0]['params']:
-                if param.requires_grad:
-                    print("\033[92m [PARAMETERS INFO] The gradient of the parameters are {} \033[0m".format(param.grad.shape))
-
             self.optimizer.zero_grad()
             current_loss += loss.item()
             current_accuracy += (pred.argmax(1) == labels).float().mean().item()
