@@ -4,6 +4,9 @@ import torch.nn.functional as F
 import torch
 from torchsummary import summary
 from torch.nn import LocalResponseNorm
+from colorama import Fore, Style, init
+
+init(autoreset=True)
 
 class Model(nn.Module):
     def __init__(self, num_classes=90):
@@ -15,11 +18,11 @@ class Model(nn.Module):
         self.conv2 = nn.Conv2d(96, 256, kernel_size=5, padding=2)
         self.norm2 = LocalResponseNormalization(5)
         self.pool2 = nn.MaxPool2d(kernel_size=3, stride=2)
-        self.conv3 = nn.Conv2d(256, 384, kernel_size=3, padding=2)
-        self.conv4 = nn.Conv2d(384, 384, kernel_size=3, padding=2)
-        self.conv5 = nn.Conv2d(384, 256, kernel_size=3, padding=2)
+        self.conv3 = nn.Conv2d(256, 384, kernel_size=3, padding=1)
+        self.conv4 = nn.Conv2d(384, 384, kernel_size=3, padding=1)
+        self.conv5 = nn.Conv2d(384, 256, kernel_size=3, padding=1)
         self.pool3 = nn.MaxPool2d(kernel_size=3, stride=2)
-        self.fc1 = nn.Linear(256 * 8 * 8, 4096)
+        self.fc1 = nn.Linear(256 * 5 * 5, 4096)
         self.fc2 = nn.Linear(4096, 4096)
         self.fc3 = nn.Linear(4096, self.num_classes)
         self.dropout = nn.Dropout(0.5)
@@ -46,6 +49,7 @@ class Model(nn.Module):
         x = self.conv5(x)
         x = F.relu(x)
         x = self.pool3(x)
+        # print(f"{Fore.LIGHTMAGENTA_EX} The shape of x before fc layer is :  {x.shape}")
         x = x.view(x.size(0), -1)
 
         x = self.fc1(x)

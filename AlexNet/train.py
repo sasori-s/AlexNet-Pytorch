@@ -10,7 +10,7 @@ from colorama import Fore, Style, init
 init(autoreset=True)
 
 class TrainModel(nn.Module):
-    def __init__(self, data_path, momentum=0.9, batch_size=128, weight_decay=0.0005, learning_rate=0.1, epoch=90, num_classes=90):
+    def __init__(self, data_path, momentum=0.9, batch_size=128, weight_decay=0.0005, learning_rate=0.001, epoch=90, num_classes=90):
         super(TrainModel, self).__init__()
         self.data_path = data_path
         self.momentum = momentum
@@ -41,7 +41,9 @@ class TrainModel(nn.Module):
         train_loader, test_loader = data.augment_dataset()
         self.train_loader = train_loader
         self.test_loader = test_loader
-        self.classes = train_loader.dataset.classes
+        self.classes = test_loader.dataset.classes
+        # print(f"{Fore.LIGHTMAGENTA_EX}  {train_loader.dataset.classes}")
+        # print(f"{Fore.LIGHTMAGENTA_EX}  {test_loader.dataset.classes}")
 
     
     def initialize_weight_and_bias(self):
@@ -74,6 +76,7 @@ class TrainModel(nn.Module):
             images, labels = self.to_device(batch)
             pred = self.model(images)
             loss = self.loss(pred, labels)
+            print(f"{Fore.YELLOW} The prediciton shape is {pred.argmax(1)} {Fore.CYAN} \t The label shape is {labels.shape}")
             print("\033[92m [LOSS INFO {}th iteration] The training loss is {:.3f} \033[0m".format(idx, loss.item()))
             loss.backward()
             torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=1)
@@ -169,8 +172,8 @@ class TrainModel(nn.Module):
             train_loss, train_acc = self.train_epoch()
             val_loss, val_acc = self.validate_epoch()
             self.scheduler.step(val_loss)
-            self.verbose(epoch, train_loss, train_acc, val_loss, val_acc)
             self.save_best_model(val_loss, val_acc)
+            self.verbose(epoch, train_loss, train_acc, val_loss, val_acc)
 
         print("\033[92m [INFO] Training has been completed \033[0m")
         self.save_final_model()

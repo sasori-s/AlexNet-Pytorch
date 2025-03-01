@@ -7,6 +7,9 @@ from torchvision.transforms import v2
 from PIL import Image
 from fancypca import FancyPCA
 from torch.utils.data import DataLoader, Dataset
+from colorama import Fore, Style, init
+
+init(autoreset=True)
 
 class LoadDataset:
     def __init__(self, train_path, test_path=None, batch_size=128):
@@ -42,6 +45,7 @@ class LoadDataset:
             test_dataset = MyDataSet(test_dataset)
             print("\033[92m", len(train_dataset), "\033[0m")
             print("\033[92m", len(test_dataset), "\033[0m")
+            # print(f"{Fore.GREEN} {test_dataset.classes}")
 
             self.train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True, pin_memory=True)
             self.test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=self.batch_size, shuffle=False, pin_memory=True)
@@ -62,6 +66,7 @@ class LoadDataset:
         
     def reshape_dataset(self, dataset):
         new_dataset = []
+        target = torch.empty(3, dtype=torch.long).random_(5)
         for i in range(len(dataset)):
             pass
 
@@ -112,7 +117,9 @@ class LoadDataset:
 
 class MyDataSet(Dataset):
     def __init__(self, data):
+        super(MyDataSet, self).__init__()
         self.data = data
+        self.classes = data.classes
     
     def __len__(self):
         return len(self.data) * 5
@@ -151,6 +158,8 @@ class ConvertToFloat:
 
 
 if __name__ == '__main__':
+    target = torch.empty(3, dtype=torch.long).random_(5)
+    print(target)
     data_path = '/mnt/A4F0E4F6F0E4D01A/Shams Iqbal/VS code/Kaggle/Datasets/animal_dataset/animals/animals'
     load_dataset = LoadDataset(data_path, data_path)
     train_loader, test_loader = load_dataset.augment_dataset(single_image=False)
