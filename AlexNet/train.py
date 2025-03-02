@@ -6,11 +6,12 @@ from model import Model
 from preprocessing import LoadDataset
 from tqdm import tqdm
 from colorama import Fore, Style, init
+import copy
 
 init(autoreset=True)
 
 class TrainModel(nn.Module):
-    def __init__(self, data_path, momentum=0.9, batch_size=128, weight_decay=0.0005, learning_rate=0.001, epoch=90, num_classes=90):
+    def __init__(self, data_path, momentum=0.9, batch_size=32, weight_decay=0.0005, learning_rate=0.001, epoch=90, num_classes=90):
         super(TrainModel, self).__init__()
         self.data_path = data_path
         self.momentum = momentum
@@ -37,7 +38,7 @@ class TrainModel(nn.Module):
 
     
     def load_train_test_data(self):
-        data = LoadDataset(self.data_path, self.data_path)
+        data = LoadDataset(self.data_path, self.data_path, batch_size=self.batch_size)
         train_loader, test_loader = data.augment_dataset()
         self.train_loader = train_loader
         self.test_loader = test_loader
@@ -72,6 +73,9 @@ class TrainModel(nn.Module):
         self.model.train()
         current_accuracy, current_loss = 0.0, 0.0
 
+        initial_state = copy.deepcopy(self.model.state_dict())
+        print(f"{Fore.LIGHTGREEN_EX} The initial state of conv1 is {initial_state['conv1.weight']}")
+
         for idx, batch in tqdm(enumerate(self.train_loader), desc='Training'):
             images, labels = self.to_device(batch)
             pred = self.model(images)
@@ -91,8 +95,19 @@ class TrainModel(nn.Module):
 
         self.train_accuracy.append(current_accuracy)
         self.train_loss.append(current_loss)
+        
+        self.compare_parameters(initial_state)
+
         return current_loss, current_accuracy
         #Do not forget to include the scheduler.step() in the run funciton. 
+
+
+    def compare_parameters(self, initial_state):
+        for keys in initial_state.keys():
+            if torch.equal(initial_state[keys], self.model.state_dict[keys]):
+                print(f"{Fore.RED} The parameter {keys} are equal")
+            else:
+                print(f"{Fore.GREEN} The parameter {keys} are not equal")
             
     
     def validate_epoch(self):

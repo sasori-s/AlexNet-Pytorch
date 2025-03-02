@@ -6,7 +6,7 @@ from PIL import Image
 detector = MTCNN()
 
 input_folder = '/mnt/A4F0E4F6F0E4D01A/Shams Iqbal/VS code/Kaggle/Datasets/Faces'  # Ensure this is a directory
-output_folder = '/mnt/A4F0E4F6F0E4D01A/Shams Iqbal/VS code/Kaggle/Datasets/Faces/Cut_faces'
+output_folder = '/mnt/A4F0E4F6F0E4D01A/Shams Iqbal/VS code/Kaggle/Datasets/Cut_faces'
 
 if not os.path.exists(output_folder):
     os.makedirs(output_folder)
