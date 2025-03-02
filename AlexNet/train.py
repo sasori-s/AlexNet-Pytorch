@@ -11,7 +11,7 @@ import copy
 init(autoreset=True)
 
 class TrainModel(nn.Module):
-    def __init__(self, data_path, momentum=0.9, batch_size=32, weight_decay=0.0005, learning_rate=0.001, epoch=90, num_classes=90):
+    def __init__(self, data_path, momentum=0.9, batch_size=64, weight_decay=0.0005, learning_rate=0.001, epoch=90, num_classes=90):
         super(TrainModel, self).__init__()
         self.data_path = data_path
         self.momentum = momentum
@@ -74,9 +74,9 @@ class TrainModel(nn.Module):
         current_accuracy, current_loss = 0.0, 0.0
 
         initial_state = copy.deepcopy(self.model.state_dict())
-        print(f"{Fore.LIGHTGREEN_EX} The initial state of conv1 is {initial_state['conv1.weight']}")
 
         for idx, batch in tqdm(enumerate(self.train_loader), desc='Training'):
+            self.optimizer.zero_grad()
             images, labels = self.to_device(batch)
             pred = self.model(images)
             loss = self.loss(pred, labels)
@@ -85,7 +85,6 @@ class TrainModel(nn.Module):
             loss.backward()
             torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=1)
             self.optimizer.step()
-            self.optimizer.zero_grad()
             current_loss += loss.item()
             current_accuracy += (pred.argmax(1) == labels).float().mean().item()
             print("\033[101m [ACCURACY INFO {}th iteration] The training accuracy is {} \033[0m".format(idx, (pred.argmax(1) == labels).float().mean().item()))
@@ -104,11 +103,28 @@ class TrainModel(nn.Module):
 
     def compare_parameters(self, initial_state):
         for keys in initial_state.keys():
-            if torch.equal(initial_state[keys], self.model.state_dict[keys]):
+            if torch.equal(initial_state[keys], self.model.state_dict()[keys]):
                 print(f"{Fore.RED} The parameter {keys} are equal")
             else:
                 print(f"{Fore.GREEN} The parameter {keys} are not equal")
             
+        for name, param in self.model.named_parameters():
+            if not param.requires_grad:
+                print(f"{Fore.RED} The parameter {name} does not require gradient")
+            else:
+                print(f"{Fore.GREEN} {name} --> params: {param.data.norm()} --> grad: {param.grad.norm()}")
+
+            if param.grad is None:
+                print(f"{Fore.RED} The gradient of the parameter {name} is None")
+            elif torch.isnan(param.grad).any():
+                print(f"{Fore.RED} The gradient of the parameter {name} is NaN")
+            elif torch.isinf(param.grad).any():
+                print(f"{Fore.RED} The gradient of the parameter {name} is Inf")
+            elif param.grad.sum() == 0:
+                print(f"{Fore.RED} The gradient of the parameter {name} is zero")
+            else:
+                print(f"{Fore.GREEN} The gradient of the parameter {name} is fine")
+
     
     def validate_epoch(self):
         self.model.eval()
