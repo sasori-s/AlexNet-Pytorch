@@ -73,14 +73,14 @@ class TrainModel(nn.Module):
         self.model.train()
         current_accuracy, current_loss = 0.0, 0.0
 
-        initial_state = copy.deepcopy(self.model.state_dict())
+        initial_state = self.save_current_parameters()
 
         for idx, batch in tqdm(enumerate(self.train_loader), desc='Training'):
             self.optimizer.zero_grad()
             images, labels = self.to_device(batch)
             pred = self.model(images)
             loss = self.loss(pred, labels)
-            print(f"{Fore.YELLOW} The prediciton shape is {pred.argmax(1)} {Fore.CYAN} \t The label shape is {labels.shape}")
+            print(f"{Fore.YELLOW} The prediciton shape is {pred.argmax(1)} {Fore.CYAN} \n The true label shape is {labels}")
             print("\033[92m [LOSS INFO {}th iteration] The training loss is {:.3f} \033[0m".format(idx, loss.item()))
             loss.backward()
             torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=1)
@@ -100,30 +100,36 @@ class TrainModel(nn.Module):
         return current_loss, current_accuracy
         #Do not forget to include the scheduler.step() in the run funciton. 
 
-
-    def compare_parameters(self, initial_state):
-        for keys in initial_state.keys():
-            if torch.equal(initial_state[keys], self.model.state_dict()[keys]):
-                print(f"{Fore.RED} The parameter {keys} are equal")
-            else:
-                print(f"{Fore.GREEN} The parameter {keys} are not equal")
-            
+    
+    def save_current_parameters(self):
+        initial_model = {} 
         for name, param in self.model.named_parameters():
-            if not param.requires_grad:
-                print(f"{Fore.RED} The parameter {name} does not require gradient")
-            else:
-                print(f"{Fore.GREEN} {name} --> params: {param.data.norm()} --> grad: {param.grad.norm()}")
+            if param.grad is not None:
+                initial_model[name] = param.data.clone()
+                initial_model[name + '_grad'] = param.grad.clone()
+                print(f"{Fore.LIGHTRED_EX} The shape of the parameter {name} is {param.grad.shape} and required grad is {param.requires_grad}")
 
-            if param.grad is None:
-                print(f"{Fore.RED} The gradient of the parameter {name} is None")
-            elif torch.isnan(param.grad).any():
-                print(f"{Fore.RED} The gradient of the parameter {name} is NaN")
-            elif torch.isinf(param.grad).any():
-                print(f"{Fore.RED} The gradient of the parameter {name} is Inf")
-            elif param.grad.sum() == 0:
-                print(f"{Fore.RED} The gradient of the parameter {name} is zero")
-            else:
-                print(f"{Fore.GREEN} The gradient of the parameter {name} is fine")
+        return initial_model
+
+
+    def compare_parameters(self, initial_model):
+        for current_name, current_param in self.model.named_parameters():
+            if current_name not in initial_model:
+                continue
+
+            initial_name = current_name
+            initial_param = initial_model[initial_name]
+            initial_grad = initial_model[initial_name + '_grad']
+
+            if torch.allclose(initial_param, current_param):
+                print(f"{Fore.LIGHTRED_EX} The parameters are the same for the parameter name {initial_name}")
+
+            if torch.allclose(initial_grad, current_param.grad):
+                print(f"{Fore.LIGHTRED_EX} The gradients are the same for the parameter name {initial_name}")
+            
+            print(f"{Fore.MAGENTA} Params : {initial_name} --> Initials {initial_param.data.norm()}  || Current {current_param.data.norm()} ")
+            print(f"{Fore.MAGENTA} Grads : {initial_name} --> Initials {initial_grad.norm()}  || Current {current_param.grad.norm()} ")
+            
 
     
     def validate_epoch(self):
@@ -137,6 +143,7 @@ class TrainModel(nn.Module):
                 pred = self.model(images)
                 loss = self.loss(pred, labels)
                 print(Fore.LIGHTRED_EX + "[LOSS INFO {}th iteration] The validation loss is {:.3f}".format(idx, loss.item()) + Style.RESET_ALL)
+                print(Fore.BLUE + "The predicitons are {}".format(pred.argmax(1)) + Fore.GREEN + "\n The true labels are {}".format(labels))
                 current_loss += loss.item()
                 current_accuracy += (pred.argmax(1) == labels).float().mean().item()
                 print(Fore.LIGHTRED_EX + "[ACCURACY INFO {}th iteration] The validation accuracy is {:.3f}".format(idx, (pred.argmax(1) == labels).float().mean().item()) + Style.RESET_ALL)
