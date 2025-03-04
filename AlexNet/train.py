@@ -13,6 +13,7 @@ init(autoreset=True)
 class TrainModel(nn.Module):
     def __init__(self, data_path, momentum=0.9, batch_size=64, weight_decay=0.0005, learning_rate=0.001, epoch=90, num_classes=90):
         super(TrainModel, self).__init__()
+        self.model_name = 'AlexNet'
         self.data_path = data_path
         self.momentum = momentum
         self.batch_size = batch_size
@@ -25,7 +26,7 @@ class TrainModel(nn.Module):
         self.model = Model()
         self.initialize_weight_and_bias()
         self.device = torch.device("cuda" if torch.cuda.is_available() else 'cpu')
-        self.model.to(self.device)
+        self.model = self.model.to(self.device)
         self.optimizer = torch.optim.SGD(self.model.parameters(), lr=self.learning_rate, momentum=self.momentum, weight_decay=self.weight_decay)
         self.scheduler = ReduceLROnPlateau(self.optimizer, mode='min', factor=0.1, patience=10)
         self.loss = nn.CrossEntropyLoss()
@@ -102,6 +103,7 @@ class TrainModel(nn.Module):
 
     
     def save_current_parameters(self):
+        print(f"{Fore.LIGHTMAGENTA_EX} {[name for name, param in self.model.named_parameters()]}")
         initial_model = {} 
         for name, param in self.model.named_parameters():
             if param.grad is not None:

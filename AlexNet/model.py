@@ -26,38 +26,47 @@ class Model(nn.Module):
         self.fc2 = nn.Linear(4096, 4096)
         self.fc3 = nn.Linear(4096, self.num_classes)
         self.dropout = nn.Dropout(0.5)
-        self.relu = nn.ReLU(inplace=True)
+        self.relu = nn.ReLU(inplace=False)
+        self.activations = {}
 
 
     def forward(self, x):
         x = self.conv1(x)
-        x = F.relu(x)
+        print(f"{Fore.LIGHTMAGENTA_EX} Requires_grad --> {x.requires_grad} The gradient of first reLU activation is : {x.grad}")
+        x = self.relu(x)
+        self.activations['relu0'] = x
         x = self.norm1(x)
         x = self.pool1(x)
 
         x = self.conv2(x)
-        x = F.relu(x)
+        x = self.relu(x)
+        self.activations['relu1'] = x
         x = self.norm2(x)
         x = self.pool2(x)
 
         x = self.conv3(x)
-        x = F.relu(x)
+        x = self.relu(x)
+        self.activations['relu2'] = x
 
         x = self.conv4(x)
-        x = F.relu(x)
+        x = self.relu(x)
+        self.activations['relu3'] = x
 
         x = self.conv5(x)
-        x = F.relu(x)
+        x = self.relu(x)
+        self.activations['relu4'] = x
         x = self.pool3(x)
         # print(f"{Fore.LIGHTMAGENTA_EX} The shape of x before fc layer is :  {x.shape}")
         x = x.view(x.size(0), -1)
 
         x = self.fc1(x)
         x = self.relu(x)
+        self.activations['relu5'] = x
         x = self.dropout(x)
 
         x = self.fc2(x)
         x = self.relu(x)
+        self.activations['relu6'] = x
         x = self.dropout(x)
 
         x = self.fc3(x)
@@ -70,5 +79,7 @@ if __name__ == '__main__':
     model = Model()
     model.to(device)
     input = torch.randn(32, 3, 224, 224).to(device)
-    model(input)
+    oouput = model(input)
     print(summary(model, (3, 224, 224)))
+    print(f"{Fore.LIGHTGREEN_EX} The gradient is : {oouput.grad}")
+    print(f"{Fore.LIGHTBLUE_EX} The device of output is : {oouput.device}")
