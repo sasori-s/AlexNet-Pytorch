@@ -78,16 +78,22 @@ class TrainModel(nn.Module):
 
         for idx, batch in tqdm(enumerate(self.train_loader), desc='Training'):
             self.optimizer.zero_grad()
+
             images, labels = self.to_device(batch)
             pred = self.model(images)
             loss = self.loss(pred, labels)
+
             print(f"{Fore.YELLOW} The prediciton shape is {pred.argmax(1)} {Fore.CYAN} \n The true label shape is {labels}")
             print("\033[92m [LOSS INFO {}th iteration] The training loss is {:.3f} \033[0m".format(idx, loss.item()))
-            loss.backward()
+
+            loss.backward(retain_graph=True)
+            print(f"{Fore.LIGHTMAGENTA_EX} The gradient of reLU1 is {self.model.relu1_grad.grad}")
             torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=1)
+
             self.optimizer.step()
             current_loss += loss.item()
             current_accuracy += (pred.argmax(1) == labels).float().mean().item()
+
             print("\033[101m [ACCURACY INFO {}th iteration] The training accuracy is {} \033[0m".format(idx, (pred.argmax(1) == labels).float().mean().item()))
         
         current_loss /= len(self.train_loader)

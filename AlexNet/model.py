@@ -30,47 +30,83 @@ class Model(nn.Module):
         self.activations = {}
 
 
-    def forward(self, x):
+    def forward_(self, x):
         x = self.conv1(x)
         print(f"{Fore.LIGHTMAGENTA_EX} Requires_grad --> {x.requires_grad} The gradient of first reLU activation is : {x.grad}")
         x = self.relu(x)
-        self.activations['relu0'] = x
+        self.activations['relu0'] = x.detach()
         x = self.norm1(x)
         x = self.pool1(x)
 
         x = self.conv2(x)
         x = self.relu(x)
-        self.activations['relu1'] = x
+        self.activations['relu1'] = x.detach()
         x = self.norm2(x)
         x = self.pool2(x)
 
         x = self.conv3(x)
         x = self.relu(x)
-        self.activations['relu2'] = x
+        self.activations['relu2'] = x.detach()
 
         x = self.conv4(x)
         x = self.relu(x)
-        self.activations['relu3'] = x
+        self.activations['relu3'] = x.detach()
 
         x = self.conv5(x)
         x = self.relu(x)
-        self.activations['relu4'] = x
+        self.activations['relu4'] = x.detach()
         x = self.pool3(x)
         # print(f"{Fore.LIGHTMAGENTA_EX} The shape of x before fc layer is :  {x.shape}")
         x = x.view(x.size(0), -1)
 
         x = self.fc1(x)
         x = self.relu(x)
-        self.activations['relu5'] = x
+        self.activations['relu5'] = x.detach()
         x = self.dropout(x)
 
         x = self.fc2(x)
         x = self.relu(x)
-        self.activations['relu6'] = x
+        self.activations['relu6'] = x.detach()
         x = self.dropout(x)
 
         x = self.fc3(x)
         return x
+
+    def forward(self, input):
+        conv1 = self.conv1(input)
+        relu1 = self.relu(conv1)
+        self.relu1_grad = relu1 
+        norm1 = self.norm1(relu1)
+        pool1 = self.pool1(norm1)
+
+        conv2 = self.conv2(pool1)
+        relu2 = self.relu(conv2)
+        norm2 = self.norm2(relu2)
+        pool2 = self.pool2(norm2)
+
+        conv3 = self.conv3(pool2)
+        relu3 = self.relu(conv3)
+
+        conv4 = self.conv4(relu3)
+        relu4 = self.relu(conv4)
+
+        conv5 = self.conv5(relu4)
+        relu5 = self.relu(conv5)
+        pool5 = self.pool3(relu5)
+
+        flatten = pool5.view(pool5.size(0), -1)
+
+        fc1 = self.fc1(flatten)
+        relu_fc1 = self.relu(fc1)
+        dropout_fc1 = self.dropout(relu_fc1)
+
+        fc2 = self.fc2(dropout_fc1)
+        relu_fc2 = self.relu(fc2)
+        dropout_fc2 = self.dropout(relu_fc2)
+
+        fc3 = self.fc3(dropout_fc2)
+        return fc3
+
 
 
 if __name__ == '__main__':
@@ -82,4 +118,7 @@ if __name__ == '__main__':
     oouput = model(input)
     print(summary(model, (3, 224, 224)))
     print(f"{Fore.LIGHTGREEN_EX} The gradient is : {oouput.grad}")
-    print(f"{Fore.LIGHTBLUE_EX} The device of output is : {oouput.device}")
+    
+    for key, value in model.activations.items():
+        print(f"{Fore.LIGHTCYAN_EX} The shape of {key} is : {value.shape}")
+        print(f"{Fore.LIGHTCYAN_EX} The gradient of {key} is : {value.grad}")

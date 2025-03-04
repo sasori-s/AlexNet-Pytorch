@@ -11,7 +11,25 @@ from colorama import Fore, Style, init
 
 init(autoreset=True)
 
-class LoadDataset:
+
+class LoadLessDataset(datasets.ImageFolder):
+    def __init__(self, root=None,  transform=None):
+        super(LoadLessDataset, self).__init__(root=root, transform=transform)
+
+    def __getitem__(self, index):
+        if index % 10 == 0:
+            path, target = self.samples[index]
+            sample = self.loader(path)
+            if self.transform is not None:
+                sample = self.transform(sample)
+            if self.target_transform is not None:
+                target = self.target_transform(target)
+
+            print(f"{Fore.GREEN} The test dataset elements shape is {sample.shape} and the target is {target}")
+            return sample, target
+
+
+class LoadDataset():
     def __init__(self, train_path, test_path=None, batch_size=128):
         self.train_path = train_path
         self.test_path = test_path
@@ -40,8 +58,12 @@ class LoadDataset:
         ])
 
         if not single_image:
-            train_dataset = datasets.ImageFolder(self.train_path, transform=train_transform)
-            test_dataset = datasets.ImageFolder(self.test_path, transform=test_transform)
+            train_dataset = LoadLessDataset(self.train_path, transform=train_transform)
+            test_dataset = LoadLessDataset(self.test_path, transform=test_transform)
+
+            print(f"{Fore.GREEN} {train_dataset[0][0].shape}")
+            print(f"{Fore.GREEN} {test_dataset[1][0].shape}")
+
             test_dataset = MyDataSet(test_dataset)
             print("\033[92m", len(train_dataset), "\033[0m")
             print("\033[92m", len(test_dataset), "\033[0m")
@@ -50,8 +72,8 @@ class LoadDataset:
             self.train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True, pin_memory=True)
             self.test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=self.batch_size, shuffle=False, pin_memory=True)
 
-            # self._show_images(test_dataset=test_dataset)
-            # self._show_images(train_dataset=train_dataset)
+            self._show_images(test_dataset=test_dataset)
+            self._show_images(train_dataset=train_dataset)
             return self.train_loader, self.test_loader
         
         else:
@@ -125,6 +147,7 @@ class MyDataSet(Dataset):
         return len(self.data) * 5
     
     def __getitem__(self, index):
+        print(f"{Fore.YELLOW} {self.data[2]}")
         original_image_index = index // 5
         crop_index = index % 5
         stack_image_tensor, label = self.data[original_image_index]
