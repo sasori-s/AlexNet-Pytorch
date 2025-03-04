@@ -16,24 +16,27 @@ class LoadLessDataset(datasets.ImageFolder):
     def __init__(self, root=None,  transform=None):
         super(LoadLessDataset, self).__init__(root=root, transform=transform)
 
-    def __getitem__(self, index):
-        if index % 10 == 0:
-            path, target = self.samples[index]
-            sample = self.loader(path)
-            if self.transform is not None:
-                sample = self.transform(sample)
-            if self.target_transform is not None:
-                target = self.target_transform(target)
+    def find_classes(self, directory):
+        limit = 5
+        classes = []
 
-            print(f"{Fore.GREEN} The test dataset elements shape is {sample.shape} and the target is {target}")
-            return sample, target
+        for d in os.scandir(directory):
+            if d.is_dir():
+                limit -= 1
+                classes.append(d.name)
+                if limit == 0:
+                    break
+        
+        classes_to_idx = {name : i for i, name in enumerate(classes)}
+        return classes, classes_to_idx
 
 
 class LoadDataset():
-    def __init__(self, train_path, test_path=None, batch_size=128):
+    def __init__(self, train_path, test_path=None, batch_size=128, testing_mode=False):
         self.train_path = train_path
         self.test_path = test_path
         self.batch_size = batch_size
+        self.testing_mode = testing_mode
 
 
     def augment_dataset(self, single_image = False, single_image_path="/mnt/A4F0E4F6F0E4D01A/Shams Iqbal/VS code/Kaggle/Datasets/animal_dataset/animals/animals/antelope/0c16ef86c0.jpg"):
@@ -42,7 +45,6 @@ class LoadDataset():
             v2.RandomCrop(size=(224, 224)),
             v2.RandomHorizontalFlip(p=0.5),
             FancyPCA(),
-            # v2.ToDtype(torch.float32, scale=True)
             ConvertToFloat(scale=True)
         ])
 
@@ -52,17 +54,16 @@ class LoadDataset():
             RandomFlipOnFiveCrop(p=0.5),
             FancyPCA(),
             ConvertToFloat(scale=True),
-            # v2.Lambda(lambda crops: torch.stack([v2.ToDtype(torch.float32, scale=True)(v2.ToTensor(crop)) for crop in crops]))
-            # v2.ToDtype(torch.float32, scale=True),
-            # v2.Lambda(lambda crops: torch.stack([v2.ToDtype(torch.float32, scale=True)(crop) for crop in crops])) 
         ])
 
         if not single_image:
-            train_dataset = LoadLessDataset(self.train_path, transform=train_transform)
-            test_dataset = LoadLessDataset(self.test_path, transform=test_transform)
+            if self.testing_mode:
+                train_dataset = LoadLessDataset(self.train_path, transform=train_transform)
+                test_dataset = LoadLessDataset(self.test_path, transform=test_transform)
 
-            print(f"{Fore.GREEN} {train_dataset[0][0].shape}")
-            print(f"{Fore.GREEN} {test_dataset[1][0].shape}")
+            else:
+                train_dataset = datasets.ImageFolder(self.train_path, transform=train_transform)
+                test_dataset = datasets.ImageFolder(self.test_path, transform=test_transform)
 
             test_dataset = MyDataSet(test_dataset)
             print("\033[92m", len(train_dataset), "\033[0m")
@@ -72,8 +73,8 @@ class LoadDataset():
             self.train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True, pin_memory=True)
             self.test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=self.batch_size, shuffle=False, pin_memory=True)
 
-            self._show_images(test_dataset=test_dataset)
-            self._show_images(train_dataset=train_dataset)
+            # self._show_images(test_dataset=test_dataset)
+            # self._show_images(train_dataset=train_dataset)
             return self.train_loader, self.test_loader
         
         else:
@@ -147,7 +148,6 @@ class MyDataSet(Dataset):
         return len(self.data) * 5
     
     def __getitem__(self, index):
-        print(f"{Fore.YELLOW} {self.data[2]}")
         original_image_index = index // 5
         crop_index = index % 5
         stack_image_tensor, label = self.data[original_image_index]
@@ -181,10 +181,8 @@ class ConvertToFloat:
 
 
 if __name__ == '__main__':
-    target = torch.empty(3, dtype=torch.long).random_(5)
-    print(target)
     data_path = '/mnt/A4F0E4F6F0E4D01A/Shams Iqbal/VS code/Kaggle/Datasets/animal_dataset/animals/animals'
-    load_dataset = LoadDataset(data_path, data_path)
+    load_dataset = LoadDataset(data_path, data_path, testing_mode=True)
     train_loader, test_loader = load_dataset.augment_dataset(single_image=False)
     
     it = iter(train_loader)

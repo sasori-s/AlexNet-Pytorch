@@ -39,7 +39,7 @@ class TrainModel(nn.Module):
 
     
     def load_train_test_data(self):
-        data = LoadDataset(self.data_path, self.data_path, batch_size=self.batch_size)
+        data = LoadDataset(self.data_path, self.data_path, batch_size=self.batch_size, testing_mode=True)
         train_loader, test_loader = data.augment_dataset()
         self.train_loader = train_loader
         self.test_loader = test_loader
