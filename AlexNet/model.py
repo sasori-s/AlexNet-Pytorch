@@ -75,33 +75,39 @@ class Model(nn.Module):
     def forward(self, input):
         conv1 = self.conv1(input)
         relu1 = self.relu(conv1)
-        self.relu1_grad = relu1 
+        self.activations['relu1'] = relu1
         norm1 = self.norm1(relu1)
         pool1 = self.pool1(norm1)
 
         conv2 = self.conv2(pool1)
         relu2 = self.relu(conv2)
+        self.activations['relu2'] = relu2
         norm2 = self.norm2(relu2)
         pool2 = self.pool2(norm2)
 
         conv3 = self.conv3(pool2)
         relu3 = self.relu(conv3)
+        self.activations['relu3'] = relu3
 
         conv4 = self.conv4(relu3)
         relu4 = self.relu(conv4)
+        self.activations['relu4'] = relu4
 
         conv5 = self.conv5(relu4)
         relu5 = self.relu(conv5)
+        self.activations['relu5'] = relu5
         pool5 = self.pool3(relu5)
 
         flatten = pool5.view(pool5.size(0), -1)
 
         fc1 = self.fc1(flatten)
         relu_fc1 = self.relu(fc1)
+        self.activations['relu_fc1'] = relu_fc1
         dropout_fc1 = self.dropout(relu_fc1)
 
         fc2 = self.fc2(dropout_fc1)
         relu_fc2 = self.relu(fc2)
+        self.activations['relu_fc2'] = relu_fc2
         dropout_fc2 = self.dropout(relu_fc2)
 
         fc3 = self.fc3(dropout_fc2)

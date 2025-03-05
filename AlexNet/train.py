@@ -70,6 +70,13 @@ class TrainModel(nn.Module):
         return images.to(self.device), labels.to(self.device)
     
 
+    def see_grad(self):
+        for name, reLU in self.model.activations.items():
+            self.model.activations[name].register_hook(
+                lambda grad : print(f"{Fore.LIGHTRED_EX} The grad of {name} is {grad.sum()}")
+            )
+
+
     def train_epoch(self):
         self.model.train()
         current_accuracy, current_loss = 0.0, 0.0
@@ -86,8 +93,10 @@ class TrainModel(nn.Module):
             print(f"{Fore.YELLOW} The prediciton shape is {pred.argmax(1)} {Fore.CYAN} \n The true label shape is {labels}")
             print("\033[92m [LOSS INFO {}th iteration] The training loss is {:.3f} \033[0m".format(idx, loss.item()))
 
+            self.see_grad()
+            self.model.activations['relu1'].register_hook(lambda grad : print(f"{Fore.LIGHTRED_EX} The grad of relu1 is {grad.sum()}"))
+            self.model.activations['relu1'].grad
             loss.backward(retain_graph=True)
-            print(f"{Fore.LIGHTMAGENTA_EX} The gradient of reLU1 is {self.model.relu1_grad.grad}")
             torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=1)
 
             self.optimizer.step()
