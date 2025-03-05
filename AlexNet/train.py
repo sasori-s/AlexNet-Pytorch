@@ -72,9 +72,27 @@ class TrainModel(nn.Module):
 
     def see_grad(self):
         for name, reLU in self.model.activations.items():
-            self.model.activations[name].register_hook(
+            handle = self.model.activations[name].register_hook(
                 lambda grad : print(f"{Fore.LIGHTRED_EX} The grad of {name} is {grad.sum()}")
             )
+            handle.remove()
+    
+    @staticmethod
+    def backward_hook(model_layer, grad_input, grad_output):
+        print(f"{Fore.LIGHTRED_EX} The layer is {model_layer} \n{Fore.BLUE} Input has {len(grad_input)} elements \n{Fore.CYAN} Output has {len(grad_output)} elements")
+
+        for grad in grad_input:
+            try:
+                print(f" for input gradient {grad.mean()}")
+            except AttributeError:
+                print(f" None found for gradient")
+
+        for grad in grad_output:
+            try:
+                print(f" for output gradient {grad.mean()}")
+            except AttributeError:
+                print(f" None found for gradient")
+        
 
 
     def train_epoch(self):
@@ -93,16 +111,19 @@ class TrainModel(nn.Module):
             print(f"{Fore.YELLOW} The prediciton shape is {pred.argmax(1)} {Fore.CYAN} \n The true label shape is {labels}")
             print("\033[92m [LOSS INFO {}th iteration] The training loss is {:.3f} \033[0m".format(idx, loss.item()))
 
-            self.see_grad()
-            self.model.activations['relu1'].register_hook(lambda grad : print(f"{Fore.LIGHTRED_EX} The grad of relu1 is {grad.sum()}"))
-            self.model.activations['relu1'].grad
+            # self.see_grad()
+            # self.model.activations['conv2'].register_hook(lambda grad : print(f"{Fore.LIGHTRED_EX} The grad of relu1 is {grad.mean()}"))
+            # self.model.activations['relu_fc1'].register_hook(lambda grad : print(f"{Fore.LIGHTRED_EX} The grad of relu_fc1 is {grad.mean()}"))
+            print("-------------------Calling the hooks-------------------")
+            self.model.relu.register_full_backward_hook(self.backward_hook)
+
             loss.backward(retain_graph=True)
+            print("-------------------ENd of the hooks-------------------")
             torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=1)
 
             self.optimizer.step()
             current_loss += loss.item()
             current_accuracy += (pred.argmax(1) == labels).float().mean().item()
-
             print("\033[101m [ACCURACY INFO {}th iteration] The training accuracy is {} \033[0m".format(idx, (pred.argmax(1) == labels).float().mean().item()))
         
         current_loss /= len(self.train_loader)

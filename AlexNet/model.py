@@ -34,7 +34,7 @@ class Model(nn.Module):
         x = self.conv1(x)
         print(f"{Fore.LIGHTMAGENTA_EX} Requires_grad --> {x.requires_grad} The gradient of first reLU activation is : {x.grad}")
         x = self.relu(x)
-        self.activations['relu0'] = x.detach()
+        self.activations['relu0'] = x
         x = self.norm1(x)
         x = self.pool1(x)
 
@@ -80,6 +80,7 @@ class Model(nn.Module):
         pool1 = self.pool1(norm1)
 
         conv2 = self.conv2(pool1)
+        self.activations['conv2'] = conv2
         relu2 = self.relu(conv2)
         self.activations['relu2'] = relu2
         norm2 = self.norm2(relu2)
@@ -128,3 +129,8 @@ if __name__ == '__main__':
     for key, value in model.activations.items():
         print(f"{Fore.LIGHTCYAN_EX} The shape of {key} is : {value.shape}")
         print(f"{Fore.LIGHTCYAN_EX} The gradient of {key} is : {value.grad}")
+
+    model.activations['relu1'].register_hook(
+        lambda grad : print(f"{Fore.LIGHTMAGENTA_EX} The gradient of relu1 is : {grad}")
+    )
+    
