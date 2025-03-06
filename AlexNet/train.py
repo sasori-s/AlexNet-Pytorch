@@ -11,7 +11,7 @@ import copy
 init(autoreset=True)
 
 class TrainModel(nn.Module):
-    def __init__(self, data_path, momentum=0.9, batch_size=64, weight_decay=0.0005, learning_rate=0.2, epoch=90, num_classes=90):
+    def __init__(self, data_path, momentum=0.9, batch_size=64, weight_decay=0.0005, learning_rate=0.00001, epoch=90, num_classes=90):
         super(TrainModel, self).__init__()
         self.model_name = 'AlexNet'
         self.data_path = data_path
@@ -120,13 +120,13 @@ class TrainModel(nn.Module):
             torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=1)
 
             self.optimizer.step()
-            # self.optimizer.zero_grad()
+            self.optimizer.zero_grad()
             current_loss += loss.item()
             current_accuracy += (pred.argmax(1) == labels).float().mean().item()
             print("\033[101m [ACCURACY INFO {}th iteration] The training accuracy is {} \033[0m".format(idx, (pred.argmax(1) == labels).float().mean().item()))
         
 
-        self.optimizer.zero_grad()
+        # self.optimizer.zero_grad()
         current_loss /= len(self.train_loader)
         current_accuracy /= len(self.train_loader)
 

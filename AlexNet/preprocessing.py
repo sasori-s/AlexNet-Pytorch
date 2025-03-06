@@ -39,7 +39,7 @@ class LoadDataset():
         self.testing_mode = testing_mode
 
 
-    def augment_dataset(self, single_image = False, single_image_path="/mnt/A4F0E4F6F0E4D01A/Shams Iqbal/VS code/Kaggle/Datasets/animal_dataset/animals/animals/antelope/0c16ef86c0.jpg"):
+    def augment_dataset(self):
         train_transform = v2.Compose([
             v2.Resize(size=(256, 256)),
             v2.RandomCrop(size=(224, 224)),
@@ -56,35 +56,25 @@ class LoadDataset():
             ConvertToFloat(scale=True),
         ])
 
-        if not single_image:
-            if self.testing_mode:
-                train_dataset = LoadLessDataset(self.train_path, transform=train_transform)
-                test_dataset = LoadLessDataset(self.test_path, transform=test_transform)
+        if self.testing_mode:
+            train_dataset = LoadLessDataset(self.train_path, transform=train_transform)
+            test_dataset = LoadLessDataset(self.test_path, transform=test_transform)
 
-            else:
-                train_dataset = datasets.ImageFolder(self.train_path, transform=train_transform)
-                test_dataset = datasets.ImageFolder(self.test_path, transform=test_transform)
-
-            test_dataset = MyDataSet(test_dataset)
-            print("\033[92m", len(train_dataset), "\033[0m")
-            print("\033[92m", len(test_dataset), "\033[0m")
-            # print(f"{Fore.GREEN} {test_dataset.classes}")
-
-            self.train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True, pin_memory=True)
-            self.test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=self.batch_size, shuffle=False, pin_memory=True)
-
-            # self._show_images(test_dataset=test_dataset)
-            # self._show_images(train_dataset=train_dataset)
-            return self.train_loader, self.test_loader
-        
         else:
-            image = Image.open(single_image_path)
-            self.single_train_augmented = train_transform(image)
-            self.single_test_augmented = test_transform(image)
-            self._show_images(test_dataset=self.single_test_augmented, single_image=False)
-            self._show_images(train_dataset=self.single_train_augmented, single_image=False)
+            train_dataset = datasets.ImageFolder(self.train_path, transform=train_transform)
+            test_dataset = datasets.ImageFolder(self.test_path, transform=test_transform)
 
-            return self.single_train_augmented, None
+        test_dataset = MyDataSet(test_dataset)
+        print("\033[92m", len(train_dataset), "\033[0m")
+        print("\033[92m", len(test_dataset), "\033[0m")
+        # print(f"{Fore.GREEN} {test_dataset.classes}")
+
+        self.train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True, pin_memory=True)
+        self.test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=self.batch_size, shuffle=False, pin_memory=True)
+
+        self._show_images(test_dataset=test_dataset)
+        self._show_images(train_dataset=train_dataset)
+        return self.train_loader, self.test_loader
 
         
     def reshape_dataset(self, dataset):
@@ -95,48 +85,32 @@ class LoadDataset():
 
 
     def _show_images(self, train_dataset=None, test_dataset=None, single_image=False):
+        figure = plt.figure(figsize=(8, 8))
+        cols, rows = 3, 3
 
-        if not single_image:
-            figure = plt.figure(figsize=(8, 8))
-            cols, rows = 3, 3
-
-            if test_dataset is not None:
-                for i in range(9):
-                    sample_index = torch.randint(len(self.test_loader.dataset), size=(1,)).item()
-                    image, label = test_dataset[sample_index]
-                    # print(f"The shape of the image is {image.shape}" )
-                    figure.add_subplot(rows, cols, i + 1)
-                    plt.title(test_dataset.data.classes[label])
-                    # plt.title(label)
-                    plt.axis('off')
-                    plt.imshow(np.asarray(image.permute(1, 2, 0)).squeeze())
-                
-                plt.show()
-            else:
-                for i in range(9):
-                    sample_index = torch.randint(len(self.train_loader.dataset), size=(1,)).item()
-                    image, label = train_dataset[sample_index]
-                    # print(f"The shape of the image is {image.shape}" )
-                    figure.add_subplot(rows, cols, i + 1)
-                    plt.title(train_dataset.classes[label])
-                    plt.axis('off')
-                    plt.imshow(np.asarray(image.permute(1, 2, 0)).squeeze())
-                
-                plt.show()
-
+        if test_dataset is not None:
+            for i in range(9):
+                sample_index = torch.randint(len(self.test_loader.dataset), size=(1,)).item()
+                image, label = test_dataset[sample_index]
+                # print(f"The shape of the image is {image.shape}" )
+                figure.add_subplot(rows, cols, i + 1)
+                plt.title(test_dataset.data.classes[label])
+                # plt.title(label)
+                plt.axis('off')
+                plt.imshow(np.asarray(image.permute(1, 2, 0)).squeeze())
+            
+            plt.show()
         else:
-            # print("The type of the image is ", train_dataset[0].shape)
-
-            if train_dataset.shape == (5, 3, 224, 224):
-                figure, axes = plt.subplots(1, 5, figsize=(15, 10))
-                for i in range(5):
-                    axes[i].imshow(np.asarray(train_dataset[i].permute(1, 2, 0)).squeeze())
-                    axes[i].axis('off')
-                plt.show()
-            else:
-                plt.imshow(np.asarray(train_dataset.permute(1, 2, 0)).squeeze())
-                plt.show()
-
+            for i in range(9):
+                sample_index = torch.randint(len(self.train_loader.dataset), size=(1,)).item()
+                image, label = train_dataset[sample_index]
+                # print(f"The shape of the image is {image.shape}" )
+                figure.add_subplot(rows, cols, i + 1)
+                plt.title(train_dataset.classes[label])
+                plt.axis('off')
+                plt.imshow(np.asarray(image.permute(1, 2, 0)).squeeze())
+            
+            plt.show()
 
 class MyDataSet(Dataset):
     def __init__(self, data):
@@ -183,7 +157,7 @@ class ConvertToFloat:
 if __name__ == '__main__':
     data_path = '/mnt/A4F0E4F6F0E4D01A/Shams Iqbal/VS code/Kaggle/Datasets/animal_dataset/animals/animals'
     load_dataset = LoadDataset(data_path, data_path, testing_mode=True)
-    train_loader, test_loader = load_dataset.augment_dataset(single_image=False)
+    train_loader, test_loader = load_dataset.augment_dataset()
     
     it = iter(train_loader)
     image, label = next(it)
