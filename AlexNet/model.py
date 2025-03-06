@@ -27,6 +27,7 @@ class Model(nn.Module):
         self.fc3 = nn.Linear(4096, self.num_classes)
         self.dropout = nn.Dropout(0.5)
         self.relu = nn.ReLU(inplace=False)
+        self.initialize_weight_and_bias()
         self.activations = {}
 
 
@@ -71,6 +72,19 @@ class Model(nn.Module):
 
         x = self.fc3(x)
         return x
+    
+
+    def initialize_weight_and_bias(self):
+        for name, param in self.named_parameters():
+            # print(f"{Fore.LIGHTGREEN_EX} The name of the parameter is : {name}")
+            if 'weight' in name:
+                # print(f"{Fore.LIGHTYELLOW_EX} The mean of {param} is {param.mean()}")
+                nn.init.xavier_normal_(param)
+            if 'bias' in name:
+                nn.init.zeros_(param)
+                # print(f"{Fore.MAGENTA} The mean of {name} is {param.mean()}")
+
+
 
     def forward(self, input):
         conv1 = self.conv1(input)
@@ -124,13 +138,5 @@ if __name__ == '__main__':
     input = torch.randn(32, 3, 224, 224).to(device)
     oouput = model(input)
     print(summary(model, (3, 224, 224)))
-    print(f"{Fore.LIGHTGREEN_EX} The gradient is : {oouput.grad}")
     
-    for key, value in model.activations.items():
-        print(f"{Fore.LIGHTCYAN_EX} The shape of {key} is : {value.shape}")
-        print(f"{Fore.LIGHTCYAN_EX} The gradient of {key} is : {value.grad}")
-
-    model.activations['relu1'].register_hook(
-        lambda grad : print(f"{Fore.LIGHTMAGENTA_EX} The gradient of relu1 is : {grad}")
-    )
     

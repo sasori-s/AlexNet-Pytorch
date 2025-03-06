@@ -11,7 +11,7 @@ import copy
 init(autoreset=True)
 
 class TrainModel(nn.Module):
-    def __init__(self, data_path, momentum=0.9, batch_size=64, weight_decay=0.0005, learning_rate=0.001, epoch=90, num_classes=90):
+    def __init__(self, data_path, momentum=0.9, batch_size=64, weight_decay=0.0005, learning_rate=0.2, epoch=90, num_classes=90):
         super(TrainModel, self).__init__()
         self.model_name = 'AlexNet'
         self.data_path = data_path
@@ -23,8 +23,8 @@ class TrainModel(nn.Module):
         self.num_classes = num_classes
 
         self.load_train_test_data()
-        self.model = Model()
-        self.initialize_weight_and_bias()
+        self.model = Model(num_classes=5)
+        # self.initialize_weight_and_bias()
         self.device = torch.device("cuda" if torch.cuda.is_available() else 'cpu')
         self.model = self.model.to(self.device)
         self.optimizer = torch.optim.SGD(self.model.parameters(), lr=self.learning_rate, momentum=self.momentum, weight_decay=self.weight_decay)
@@ -48,21 +48,21 @@ class TrainModel(nn.Module):
         # print(f"{Fore.LIGHTMAGENTA_EX}  {test_loader.dataset.classes}")
 
     
-    def initialize_weight_and_bias(self):
-        bias_to_zero = ['conv1', 'conv3']
-        bias_to_one = ['conv2', 'conv4', 'conv5', 'fc1', 'fc2', 'fc3']
+    # def initialize_weight_and_bias(self):
+    #     bias_to_zero = ['conv1', 'conv3']
+    #     bias_to_one = ['conv2', 'conv4', 'conv5', 'fc1', 'fc2', 'fc3']
 
-        for name, param in self.model.named_parameters():
-            if 'weight' in name:
-                torch.nn.init.normal_(param.data, mean=0, std=0.01)
+    #     for name, param in self.model.named_parameters():
+    #         if 'weight' in name:
+    #             torch.nn.init.normal_(param.data, mean=0, std=0.01)
 
-            if 'bias' in name:
-                if name in bias_to_zero:
-                    param.data.fill_(0)
-                elif name in bias_to_one:
-                    param.data.fill_(1)
-                else:
-                    param.data.fill_(0)
+    #         if 'bias' in name:
+    #             if name in bias_to_zero:
+    #                 param.data.fill_(0)
+    #             elif name in bias_to_one:
+    #                 param.data.fill_(1)
+    #             else:
+    #                 param.data.fill_(0)
 
         
     def to_device(self, batch):
@@ -102,30 +102,31 @@ class TrainModel(nn.Module):
         initial_state = self.save_current_parameters()
 
         for idx, batch in tqdm(enumerate(self.train_loader), desc='Training'):
-            self.optimizer.zero_grad()
 
             images, labels = self.to_device(batch)
             pred = self.model(images)
             loss = self.loss(pred, labels)
 
-            print(f"{Fore.YELLOW} The prediciton shape is {pred.argmax(1)} {Fore.CYAN} \n The true label shape is {labels}")
+            print(f"{Fore.YELLOW} The predicitons are {pred.shape} \n {pred.argmax(1)} {Fore.CYAN} \n The true labeles are {labels.unsqueeze(1).shape}\n {labels}")
             print("\033[92m [LOSS INFO {}th iteration] The training loss is {:.3f} \033[0m".format(idx, loss.item()))
 
             # self.see_grad()
-            # self.model.activations['conv2'].register_hook(lambda grad : print(f"{Fore.LIGHTRED_EX} The grad of relu1 is {grad.mean()}"))
-            # self.model.activations['relu_fc1'].register_hook(lambda grad : print(f"{Fore.LIGHTRED_EX} The grad of relu_fc1 is {grad.mean()}"))
-            print("-------------------Calling the hooks-------------------")
-            self.model.relu.register_full_backward_hook(self.backward_hook)
+            self.model.activations['conv2'].register_hook(lambda grad : print(f"{Fore.LIGHTRED_EX} The grad of relu1 is {grad.mean()}"))
+            self.model.activations['relu_fc1'].register_hook(lambda grad : print(f"{Fore.LIGHTRED_EX} The grad of relu_fc1 is {grad.mean()}"))
+            # self.model.relu.register_full_backward_hook(self.backward_hook)
 
             loss.backward(retain_graph=True)
-            print("-------------------ENd of the hooks-------------------")
+            # print("-------------------ENd of the hooks-------------------")
             torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=1)
 
             self.optimizer.step()
+            # self.optimizer.zero_grad()
             current_loss += loss.item()
             current_accuracy += (pred.argmax(1) == labels).float().mean().item()
             print("\033[101m [ACCURACY INFO {}th iteration] The training accuracy is {} \033[0m".format(idx, (pred.argmax(1) == labels).float().mean().item()))
         
+
+        self.optimizer.zero_grad()
         current_loss /= len(self.train_loader)
         current_accuracy /= len(self.train_loader)
 
