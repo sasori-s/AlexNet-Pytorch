@@ -75,6 +75,38 @@ class LoadDataset():
         self._show_images(test_dataset=test_dataset)
         self._show_images(train_dataset=train_dataset)
         return self.train_loader, self.test_loader
+    
+
+    def no_augment_dataset(self):
+        train_transform = v2.Compose([
+            v2.Resize(size=(224, 224)),
+            v2.ToTensor()
+        ])
+
+        train_dataset = datasets.ImageFolder(self.train_path, transform=train_transform)
+        test_dataset = datasets.ImageFolder(self.test_path, transform=train_transform)
+
+        print("\033[92m", f"Train dataset length -> {len(train_dataset)}", "\033[0m")
+        print("\033[96m", f"validation dataset length -> {len(test_dataset)}" "\033[0m")
+
+        self.train_loader = torch.utils.data.DataLoader(
+            train_dataset, 
+            batch_size=self.batch_size,
+            shuffle=True,
+            pin_memory=True
+        )
+
+        self.test_loader = torch.utils.data.DataLoader(
+            test_dataset,
+            batch_size=self.batch_size,
+            shuffle=False,
+            pin_memory=True
+        )
+
+        # self._show_images(train_dataset=train_dataset)
+        # self._show_images(test_dataset=test_dataset)
+
+        return self.train_loader, self.test_loader
 
         
     def reshape_dataset(self, dataset):
@@ -157,7 +189,7 @@ class ConvertToFloat:
 if __name__ == '__main__':
     data_path = '/mnt/A4F0E4F6F0E4D01A/Shams Iqbal/VS code/Kaggle/Datasets/animal_dataset/animals/animals'
     load_dataset = LoadDataset(data_path, data_path, testing_mode=True)
-    train_loader, test_loader = load_dataset.augment_dataset()
+    train_loader, test_loader = load_dataset.no_augment_dataset()
     
     it = iter(train_loader)
     image, label = next(it)
