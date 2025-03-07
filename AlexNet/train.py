@@ -7,6 +7,7 @@ from preprocessing import LoadDataset
 from tqdm import tqdm
 from colorama import Fore, Style, init
 import copy
+from model import initialize_weight_and_bias
 
 init(autoreset=True)
 
@@ -23,7 +24,8 @@ class TrainModel(nn.Module):
         self.num_classes = num_classes
 
         self.load_train_test_data()
-        self.model = Model()
+        self.model = Model(num_classes=5)
+        self.model.apply(initialize_weight_and_bias)
         # self.initialize_weight_and_bias()
         self.device = torch.device("cuda" if torch.cuda.is_available() else 'cpu')
         self.model = self.model.to(self.device)
@@ -40,7 +42,7 @@ class TrainModel(nn.Module):
     
     def load_train_test_data(self):
         data = LoadDataset(self.data_path, self.data_path, batch_size=self.batch_size, testing_mode=True)
-        train_loader, test_loader = data.no_augment_dataset()
+        train_loader, test_loader = data.augment_dataset()
         self.train_loader = train_loader
         self.test_loader = test_loader
         # self.classes = test_loader.dataset.classes

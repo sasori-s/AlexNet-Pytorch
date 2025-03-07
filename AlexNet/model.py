@@ -25,9 +25,9 @@ class Model(nn.Module):
         self.fc1 = nn.Linear(256 * 5 * 5, 4096)
         self.fc2 = nn.Linear(4096, 4096)
         self.fc3 = nn.Linear(4096, self.num_classes)
+        self.test_layer_weight = self.conv1.weight.data.clone().to('cuda')
         self.dropout = nn.Dropout(0.5)
         self.relu = nn.ReLU(inplace=False)
-        self.initialize_weight_and_bias()
         self.activations = {}
 
 
@@ -74,18 +74,6 @@ class Model(nn.Module):
         return x
     
 
-    def initialize_weight_and_bias(self):
-        for name, param in self.named_parameters():
-            # print(f"{Fore.LIGHTGREEN_EX} The name of the parameter is : {name}")
-            if 'weight' in name:
-                # print(f"{Fore.LIGHTYELLOW_EX} The mean of {param} is {param.mean()}")
-                nn.init.xavier_normal_(param)
-            if 'bias' in name:
-                nn.init.zeros_(param)
-                # print(f"{Fore.MAGENTA} The mean of {name} is {param.mean()}")
-
-
-
     def forward(self, input):
         conv1 = self.conv1(input)
         relu1 = self.relu(conv1)
@@ -127,6 +115,20 @@ class Model(nn.Module):
 
         fc3 = self.fc3(dropout_fc2)
         return fc3
+    
+
+def initialize_weight_and_bias(m):
+    if isinstance(m, nn.Conv2d):
+        initial_weight = m.weight.data.clone()
+        m.weight = nn.init.xavier_uniform_(m.weight)
+        nn.init.constant_(m.bias, 0)
+        print(f"{Fore.LIGHTCYAN_EX} Is weight for convs the same {torch.allclose(initial_weight, m.weight.data)}")
+
+    elif isinstance(m, nn.Linear):
+        initial_weight = m.weight.data.clone()
+        nn.init.xavier_uniform_(m.weight)
+        nn.init.constant_(m.bias, 0)
+        print(f"{Fore.LIGHTCYAN_EX} Is weight for fc the same {torch.allclose(initial_weight, m.weight.data)}")
 
 
 
@@ -135,8 +137,10 @@ if __name__ == '__main__':
     print("\tTHe device is {}".format(device))
     model = Model()
     model.to(device)
+    model.apply(initialize_weight_and_bias)
     input = torch.randn(32, 3, 224, 224).to(device)
     oouput = model(input)
     print(summary(model, (3, 224, 224)))
+    print(f"{Fore.LIGHTYELLOW_EX} Are weights same : {torch.allclose(model.test_layer_weight, model.conv1.weight.data)}")
     
     
