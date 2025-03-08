@@ -7,7 +7,6 @@ from preprocessing import LoadDataset
 from tqdm import tqdm
 from colorama import Fore, Style, init
 import copy
-from model import initialize_weight_and_bias
 
 init(autoreset=True)
 
@@ -25,8 +24,6 @@ class TrainModel(nn.Module):
 
         self.load_train_test_data()
         self.model = Model(num_classes=5)
-        self.model.apply(initialize_weight_and_bias)
-        # self.initialize_weight_and_bias()
         self.device = torch.device("cuda" if torch.cuda.is_available() else 'cpu')
         self.model = self.model.to(self.device)
         self.optimizer = torch.optim.SGD(self.model.parameters(), lr=self.learning_rate, momentum=self.momentum, weight_decay=self.weight_decay)
@@ -113,9 +110,9 @@ class TrainModel(nn.Module):
             print("\033[92m [LOSS INFO {}th iteration] The training loss is {:.3f} \033[0m".format(idx, loss.item()))
 
             # self.see_grad()
-            self.model.activations['conv2'].register_hook(lambda grad : print(f"{Fore.LIGHTRED_EX} The grad of relu1 is {grad.mean()}"))
-            self.model.activations['relu_fc1'].register_hook(lambda grad : print(f"{Fore.LIGHTRED_EX} The grad of relu_fc1 is {grad.mean()}"))
-            # self.model.relu.register_full_backward_hook(self.backward_hook)
+            self.model.activations['conv1'].register_hook(lambda grad : print(f"{Fore.LIGHTRED_EX} The grad of relu1 is {grad.mean()}"))
+            self.model.activations['conv5'].register_hook(lambda grad : print(f"{Fore.LIGHTRED_EX} The grad of relu_fc1 is {grad.mean()}"))
+            self.model.conv4.register_full_backward_hook(self.backward_hook)
 
             loss.backward(retain_graph=True)
             # print("-------------------ENd of the hooks-------------------")

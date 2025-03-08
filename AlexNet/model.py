@@ -25,9 +25,10 @@ class Model(nn.Module):
         self.fc1 = nn.Linear(256 * 5 * 5, 4096)
         self.fc2 = nn.Linear(4096, 4096)
         self.fc3 = nn.Linear(4096, self.num_classes)
-        self.test_layer_weight = self.conv1.weight.data.clone().to('cuda')
         self.dropout = nn.Dropout(0.5)
         self.relu = nn.ReLU(inplace=False)
+        self.softmax = nn.Softmax(dim=1)
+        self.apply(self.initialize_weight_and_bias)
         self.activations = {}
 
 
@@ -57,7 +58,6 @@ class Model(nn.Module):
         x = self.relu(x)
         self.activations['relu4'] = x.detach()
         x = self.pool3(x)
-        # print(f"{Fore.LIGHTMAGENTA_EX} The shape of x before fc layer is :  {x.shape}")
         x = x.view(x.size(0), -1)
 
         x = self.fc1(x)
@@ -76,6 +76,7 @@ class Model(nn.Module):
 
     def forward(self, input):
         conv1 = self.conv1(input)
+        self.activations['conv1'] = conv1
         relu1 = self.relu(conv1)
         self.activations['relu1'] = relu1
         norm1 = self.norm1(relu1)
@@ -97,6 +98,7 @@ class Model(nn.Module):
         self.activations['relu4'] = relu4
 
         conv5 = self.conv5(relu4)
+        self.activations['conv5'] = conv5
         relu5 = self.relu(conv5)
         self.activations['relu5'] = relu5
         pool5 = self.pool3(relu5)
@@ -114,21 +116,27 @@ class Model(nn.Module):
         dropout_fc2 = self.dropout(relu_fc2)
 
         fc3 = self.fc3(dropout_fc2)
-        return fc3
+        softmax = self.softmax(fc3)
+        return softmax
     
 
-def initialize_weight_and_bias(m):
-    if isinstance(m, nn.Conv2d):
-        initial_weight = m.weight.data.clone()
-        m.weight = nn.init.xavier_uniform_(m.weight)
-        nn.init.constant_(m.bias, 0)
-        print(f"{Fore.LIGHTCYAN_EX} Is weight for convs the same {torch.allclose(initial_weight, m.weight.data)}")
+    def initialize_weight_and_bias(self, m):
+        if isinstance(m, nn.Conv2d):
+            initial_weight = m.weight.mean()
+            m.weight = nn.init.xavier_normal_(m.weight)
+            nn.init.constant_(m.bias, 0)
+            print(f"{Fore.LIGHTCYAN_EX} THe initial weight is {initial_weight} and the new weight is {m.weight.data.mean()}")
 
-    elif isinstance(m, nn.Linear):
-        initial_weight = m.weight.data.clone()
-        nn.init.xavier_uniform_(m.weight)
-        nn.init.constant_(m.bias, 0)
-        print(f"{Fore.LIGHTCYAN_EX} Is weight for fc the same {torch.allclose(initial_weight, m.weight.data)}")
+        elif isinstance(m, nn.Linear):
+            initial_weight = m.weight.mean()
+            nn.init.xavier_uniform_(m.weight)
+            nn.init.constant_(m.bias, 0)
+            print(f"{Fore.LIGHTCYAN_EX} THe initial weight is {initial_weight} and the new weight is {m.weight.data.mean()}")
+
+    
+    def check_weights(self):
+        for name, param in self.named_parameters():
+            print(f"{Fore.LIGHTYELLOW_EX} The name of the layer is {name} and the weight is {param.data.mean()}")
 
 
 
@@ -137,10 +145,11 @@ if __name__ == '__main__':
     print("\tTHe device is {}".format(device))
     model = Model()
     model.to(device)
-    model.apply(initialize_weight_and_bias)
+    model.check_weights()
+    # model.apply(model.initialize_weight_and_bias)
     input = torch.randn(32, 3, 224, 224).to(device)
     oouput = model(input)
     print(summary(model, (3, 224, 224)))
-    print(f"{Fore.LIGHTYELLOW_EX} Are weights same : {torch.allclose(model.test_layer_weight, model.conv1.weight.data)}")
+    # print(f"{Fore.LIGHTYELLOW_EX} Are weights same : {torch.allclose(model.test_layer_weight, model.conv1.weight.data)}")
     
     
