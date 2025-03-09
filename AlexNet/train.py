@@ -91,7 +91,13 @@ class TrainModel(nn.Module):
                 print(f" for output gradient {grad.mean()}")
             except AttributeError:
                 print(f" None found for gradient")
-        
+    
+
+    def call_backward_hook(self):
+        print(f"{Fore.LIGHTRED_EX} {self.model.modules()}")
+        for layer in self.model.modules():
+            # print(f"{Fore.LIGHTRED_EX} The layer is {layer}")
+            layer.register_full_backward_hook(self.backward_hook)
 
 
     def train_epoch(self):
@@ -112,9 +118,10 @@ class TrainModel(nn.Module):
             # self.see_grad()
             self.model.activations['conv1'].register_hook(lambda grad : print(f"{Fore.LIGHTRED_EX} The grad of relu1 is {grad.mean()}"))
             self.model.activations['conv5'].register_hook(lambda grad : print(f"{Fore.LIGHTRED_EX} The grad of relu_fc1 is {grad.mean()}"))
-            self.model.conv4.register_full_backward_hook(self.backward_hook)
+            # self.model.register_full_backward_hook(self.backward_hook)
 
             loss.backward(retain_graph=True)
+            # self.call_backward_hook()
             # print("-------------------ENd of the hooks-------------------")
             torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=1)
 
@@ -168,7 +175,6 @@ class TrainModel(nn.Module):
             print(f"{Fore.MAGENTA} Params : {initial_name} --> Initials {initial_param.data.norm()}  || Current {current_param.data.norm()} ")
             print(f"{Fore.MAGENTA} Grads : {initial_name} --> Initials {initial_grad.norm()}  || Current {current_param.grad.norm()} ")
             
-
     
     def validate_epoch(self):
         self.model.eval()
