@@ -27,7 +27,6 @@ class Model(nn.Module):
         self.fc3 = nn.Linear(4096, self.num_classes)
         self.dropout = nn.Dropout(0.5)
         self.relu = nn.ReLU(inplace=False)
-        self.softmax = nn.Softmax(dim=1)
         self.apply(self.initialize_weight_and_bias)
         self.activations = {}
 
@@ -116,8 +115,7 @@ class Model(nn.Module):
         dropout_fc2 = self.dropout(relu_fc2)
 
         fc3 = self.fc3(dropout_fc2)
-        softmax = self.softmax(fc3)
-        return softmax
+        return fc3
     
 
     def initialize_weight_and_bias(self, m):
