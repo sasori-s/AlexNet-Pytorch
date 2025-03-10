@@ -9,6 +9,7 @@ init(autoreset=True)
 class TrainingUtils():
     def __init__(self):
         data_path = "/mnt/A4F0E4F6F0E4D01A/Shams Iqbal/VS code/Kaggle/Datasets/animal_dataset/animals/animals"
+        self.plot_save_path = "AlexNet/training_plots"
         
     
     @staticmethod
@@ -69,6 +70,7 @@ class TrainingUtils():
             print(f"{Fore.MAGENTA} Params : {initial_name} --> Initials {initial_param.data.norm()}  || Current {current_param.data.norm()} ")
             print(f"{Fore.MAGENTA} Grads : {initial_name} --> Initials {initial_grad.norm()}  || Current {current_param.grad.norm()} ")
 
+
     def save_best_model(self, model : object, current_loss, current_accuracy):
         if current_loss < model.best_loss:
             model.not_improved = 0
@@ -123,7 +125,41 @@ class TrainingUtils():
             )
             handle.remove()
 
+
     def verbose(self, model, epoch, train_loss, train_acc, val_loss, val_acc):
         print("\033[95m ==> Epoch {}: Training Accuracy --> {:.3f} || Training Loss --> {:.3f} \033[0m".format(epoch, train_acc, train_loss))
         print("\033[95m ==> Epoch {}: Validation Accuracy --> {:.3f} || Validation Loss --> {:.3f} \033[0m".format(epoch, val_acc, val_loss))
         print("\033[95m ==> Best Accuracy: {:.3f} || Best Loss: {:.3f} \033[0m\n".format(model.best_accuracy, model.best_loss))
+
+    
+    def plot_grad_flow(self, model, named_parameters, epoch, idx):
+        '''Plots the gradients flowing through different layers in the net during training.
+        Can be used for checking for possible gradient vanishing / exploding problems.
+        
+        Usage: Plug this function in Trainer class after loss.backwards() as 
+        "plot_grad_flow(self.model.named_parameters())" to visualize the gradient flow'''
+        ave_grads = []
+        max_grads= []
+        layers = []
+        for n, p in named_parameters:
+            if(p.requires_grad) and ("bias" not in n):
+                layers.append(n)
+                ave_grads.append(p.grad.abs().mean().cpu().detach().numpy())
+                max_grads.append(p.grad.abs().max().cpu().detach().numpy())
+        plt.figure(figsize=(10, 10))
+        plt.bar(np.arange(len(max_grads)), max_grads, alpha=0.1, lw=1, color="green")
+        plt.bar(np.arange(len(max_grads)), ave_grads, alpha=0.1, lw=1, color="red")
+        plt.hlines(0, 0, len(ave_grads)+1, lw=2, color="k" )
+        plt.xticks(range(0,len(ave_grads), 1), layers, rotation="vertical")
+        plt.xlim(left=0, right=len(ave_grads))
+        plt.ylim(bottom = -0.001, top=0.02) # zoom in on the lower gradient regions
+        plt.xlabel("Layers")
+        plt.ylabel("average gradient")
+        plt.title("Gradient flow")
+        plt.grid(True)
+        plt.tight_layout()
+        plot_name = os.path.join(self.plot_save_path, f"gradient_flow_{epoch}_{idx}.png")
+        plt.savefig(plot_name)
+        # plt.legend([Line2D([0], [0], color="c", lw=4),
+        #             Line2D([0], [0], color="b", lw=4),
+        #             Line2D([0], [0], color="k", lw=4)], ['max-gradient', 'mean-gradient', 'zero-gradient'])

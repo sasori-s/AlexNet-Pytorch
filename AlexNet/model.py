@@ -121,7 +121,7 @@ class Model(nn.Module):
     def initialize_weight_and_bias(self, m):
         if isinstance(m, nn.Conv2d):
             initial_weight = m.weight.mean()
-            m.weight = nn.init.xavier_normal_(m.weight)
+            nn.init.kaiming_normal_(m.weight)
             nn.init.constant_(m.bias, 0)
             print(f"{Fore.LIGHTCYAN_EX} THe initial weight is {initial_weight} and the new weight is {m.weight.data.mean()}")
 

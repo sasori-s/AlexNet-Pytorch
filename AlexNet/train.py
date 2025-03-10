@@ -55,7 +55,7 @@ class TrainModel(nn.Module):
         return images.to(self.device), labels.to(self.device)
 
 
-    def train_epoch(self):
+    def train_epoch(self, epoch):
         self.model.train()
         current_accuracy, current_loss = 0.0, 0.0
 
@@ -75,8 +75,9 @@ class TrainModel(nn.Module):
             self.model.activations['conv5'].register_hook(lambda grad : print(f"{Fore.LIGHTRED_EX} The grad of relu_fc1 is {grad.mean()}"))
             # self.model.register_full_backward_hook(self.backward_hook)
 
-            self.utils.call_backward_hook(self)
+            # self.utils.call_backward_hook(self)
             loss.backward(retain_graph=True)
+            self.utils.plot_grad_flow(self, self.model.named_parameters(), epoch,  idx)
             # print("-------------------ENd of the hooks-------------------")
             torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=1)
 
@@ -129,7 +130,7 @@ class TrainModel(nn.Module):
     def run(self):
         print("\033[92m [INFO] Starting the tranining process \033[0m ")
         for epoch in range(1, self.epoch + 1):
-            train_loss, train_acc = self.train_epoch()
+            train_loss, train_acc = self.train_epoch(epoch)
             val_loss, val_acc = self.validate_epoch()
             self.scheduler.step(val_loss)
             self.utils.save_best_model(self, val_loss, val_acc)
