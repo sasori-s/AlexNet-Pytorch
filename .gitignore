@@ -27,3 +27,5 @@ data/
 # Ignore system files
 .DS_Store
 Thumbs.db
+
+AlexNet/trianing_plots/

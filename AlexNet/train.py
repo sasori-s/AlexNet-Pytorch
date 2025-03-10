@@ -12,7 +12,7 @@ from training_utils import TrainingUtils
 init(autoreset=True)
 
 class TrainModel(nn.Module):
-    def __init__(self, data_path, momentum=0.9, batch_size=64, weight_decay=0.0005, learning_rate=0.00001, epoch=90, num_classes=90):
+    def __init__(self, data_path, momentum=0.9, batch_size=64, weight_decay=0.0005, learning_rate=0.1, epoch=90, num_classes=90):
         super(TrainModel, self).__init__()
         self.model_name = 'AlexNet'
         self.data_path = data_path
@@ -137,7 +137,7 @@ class TrainModel(nn.Module):
             self.utils.verbose(self, epoch, train_loss, train_acc, val_loss, val_acc)
 
         print("\033[92m [INFO] Training has been completed \033[0m")
-        self.utils.save_final_model()
+        self.utils.save_final_model(self)
         return self.train_loss, self.train_accuracy, self.val_loss, self.val_accuracy
     
 
