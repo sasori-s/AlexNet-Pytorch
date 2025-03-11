@@ -133,6 +133,7 @@ class Model(nn.Module):
 
     
     def check_weights(self):
+        name = self.__class__.__name__
         for name, param in self.named_parameters():
             print(f"{Fore.LIGHTYELLOW_EX} The name of the layer is {name} and the weight is {param.data.mean()}")
 
@@ -143,11 +144,10 @@ if __name__ == '__main__':
     print("\tTHe device is {}".format(device))
     model = Model()
     model.to(device)
+    cuda_profile = next(model.parameters()).is_cuda
     model.check_weights()
-    # model.apply(model.initialize_weight_and_bias)
     input = torch.randn(32, 3, 224, 224).to(device)
     oouput = model(input)
     print(summary(model, (3, 224, 224)))
-    # print(f"{Fore.LIGHTYELLOW_EX} Are weights same : {torch.allclose(model.test_layer_weight, model.conv1.weight.data)}")
     
     

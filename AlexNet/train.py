@@ -28,6 +28,7 @@ class TrainModel(nn.Module):
         self.model = Model(num_classes=5)
         self.device = torch.device("cuda" if torch.cuda.is_available() else 'cpu')
         self.model = self.model.to(self.device)
+        self.cuda_profile = next(self.model.parameters()).is_cuda
         self.optimizer = torch.optim.SGD(self.model.parameters(), lr=self.learning_rate, momentum=self.momentum, weight_decay=self.weight_decay)
         self.scheduler = ReduceLROnPlateau(self.optimizer, mode='min', factor=0.1, patience=10)
         self.loss = nn.CrossEntropyLoss()

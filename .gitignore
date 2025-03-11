@@ -28,4 +28,4 @@ data/
 .DS_Store
 Thumbs.db
 
-AlexNet/trianing_plots/
+trianing_plots/
