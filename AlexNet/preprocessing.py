@@ -11,10 +11,12 @@ from colorama import Fore, Style, init
 
 init(autoreset=True)
 
+device = torch.device("cuda" if torch.cuda.is_available() else 'cpu')
 
 class LoadLessDataset(datasets.ImageFolder):
     def __init__(self, root=None,  transform=None):
         super(LoadLessDataset, self).__init__(root=root, transform=transform)
+        
 
     def find_classes(self, directory):
         limit = 5
@@ -42,17 +44,17 @@ class LoadDataset():
     def augment_dataset(self):
         train_transform = v2.Compose([
             v2.Resize(size=(256, 256)),
+            FancyPCA(),
             v2.RandomCrop(size=(224, 224)),
             v2.RandomHorizontalFlip(p=0.5),
-            FancyPCA(),
             ConvertToFloat(scale=True)
         ])
 
         test_transform = v2.Compose([
             v2.Resize(size=(256, 256)),
+            FancyPCA(),
             v2.FiveCrop(size=(224, 224)),  #[crop1, crop2, crop3, crop4, ...]
             RandomFlipOnFiveCrop(p=0.5),
-            FancyPCA(),
             ConvertToFloat(scale=True),
         ])
 

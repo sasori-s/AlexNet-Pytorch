@@ -41,7 +41,7 @@ class TrainingUtils():
 
 
     def save_current_parameters(self, model : object):
-        print(f"{Fore.LIGHTMAGENTA_EX} {[name for name, param in model.named_parameters()]}")
+        # print(f"{Fore.LIGHTMAGENTA_EX} {[name for name, param in model.named_parameters()]}")
         initial_model = {} 
         for name, param in model.named_parameters():
             if param.grad is not None:

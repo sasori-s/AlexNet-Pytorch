@@ -12,8 +12,9 @@ from training_utils import TrainingUtils
 init(autoreset=True)
 
 class TrainModel(nn.Module):
-    def __init__(self, data_path, momentum=0.9, batch_size=64, weight_decay=0.0005, learning_rate=0.1, epoch=90, num_classes=90):
+    def __init__(self, data_path, momentum=0.9, batch_size=64, weight_decay=0.0005, learning_rate=0.1, epoch=90, num_classes=90, save_models=True):
         super(TrainModel, self).__init__()
+        self.save_models = save_models
         self.model_name = 'AlexNet'
         self.data_path = data_path
         self.momentum = momentum
@@ -31,7 +32,7 @@ class TrainModel(nn.Module):
         self.cuda_profile = next(self.model.parameters()).is_cuda
         self.optimizer = torch.optim.SGD(self.model.parameters(), lr=self.learning_rate, momentum=self.momentum, weight_decay=self.weight_decay)
         self.scheduler = ReduceLROnPlateau(self.optimizer, mode='min', factor=0.1, patience=10)
-        self.loss = nn.CrossEntropyLoss()
+        self.loss = nn.CrossEntropyLoss().cuda()
         self.best_loss = float('inf')
         self.best_accuracy = 0.0
         self.train_loss, self.val_loss = [], []
@@ -60,7 +61,7 @@ class TrainModel(nn.Module):
         self.model.train()
         current_accuracy, current_loss = 0.0, 0.0
 
-        initial_state = self.utils.save_current_parameters(self)
+        # initial_state = self.utils.save_current_parameters(self)
 
         for idx, batch in tqdm(enumerate(self.train_loader), desc='Training'):
 
@@ -68,12 +69,12 @@ class TrainModel(nn.Module):
             pred = self.model(images)
             loss = self.loss(pred, labels)
 
-            print(f"{Fore.YELLOW} The predicitons are {pred.shape} \n {pred.argmax(1)} {Fore.CYAN} \n The true labeles are {labels.unsqueeze(1).shape}\n {labels}")
-            print("\033[92m [LOSS INFO {}th iteration] The training loss is {:.3f} \033[0m".format(idx, loss.item()))
+            # print(f"{Fore.YELLOW} The predicitons are {pred.shape} \n {pred.argmax(1)} {Fore.CYAN} \n The true labeles are {labels.unsqueeze(1).shape}\n {labels}")
+            # print("\033[92m [LOSS INFO {}th iteration] The training loss is {:.3f} \033[0m".format(idx, loss.item()))
 
             # self.see_grad()
-            self.model.activations['conv1'].register_hook(lambda grad : print(f"{Fore.LIGHTRED_EX} The grad of relu1 is {grad.mean()}"))
-            self.model.activations['conv5'].register_hook(lambda grad : print(f"{Fore.LIGHTRED_EX} The grad of relu_fc1 is {grad.mean()}"))
+            # self.model.activations['conv1'].register_hook(lambda grad : print(f"{Fore.LIGHTRED_EX} The grad of relu1 is {grad.mean()}"))
+            # self.model.activations['conv5'].register_hook(lambda grad : print(f"{Fore.LIGHTRED_EX} The grad of relu_fc1 is {grad.mean()}"))
             # self.model.register_full_backward_hook(self.backward_hook)
 
             # self.utils.call_backward_hook(self)
@@ -86,23 +87,27 @@ class TrainModel(nn.Module):
             self.optimizer.zero_grad()
             current_loss += loss.item()
             current_accuracy += (pred.argmax(1) == labels).float().mean().item()
-            print("\033[101m [ACCURACY INFO {}th iteration] The training accuracy is {} \033[0m".format(idx, (pred.argmax(1) == labels).float().mean().item()))
+            # print("\033[101m [ACCURACY INFO {}th iteration] The training accuracy is {} \033[0m".format(idx, (pred.argmax(1) == labels).float().mean().item()))
         
 
         # self.optimizer.zero_grad()
         current_loss /= len(self.train_loader)
         current_accuracy /= len(self.train_loader)
 
+        print("\033[101m [TRAINING INFO ==> {} epoch] \033[0m".format(epoch))
+        print(f"{Fore.LIGHTGREEN_EX} The current training loss is {current_loss}")
+        print(f"{Fore.LIGHTBLUE_EX} The current trianing accuracy is {current_accuracy}")
+
         self.train_accuracy.append(current_accuracy)
         self.train_loss.append(current_loss)
         
-        self.utils.compare_parameters(self, initial_state)
+        # self.utils.compare_parameters(self, initial_state)
 
         return current_loss, current_accuracy
         #Do not forget to include the scheduler.step() in the run funciton. 
             
     
-    def validate_epoch(self):
+    def validate_epoch(self, epoch):
         self.model.eval()
         current_loss = 0.0
         current_accuracy = 0.0
@@ -112,14 +117,18 @@ class TrainModel(nn.Module):
                 images, labels = self.to_device(batch)
                 pred = self.model(images)
                 loss = self.loss(pred, labels)
-                print(Fore.LIGHTRED_EX + "[LOSS INFO {}th iteration] The validation loss is {:.3f}".format(idx, loss.item()) + Style.RESET_ALL)
-                print(Fore.BLUE + "The predicitons are {}".format(pred.argmax(1)) + Fore.GREEN + "\n The true labels are {}".format(labels))
+                # print(Fore.LIGHTRED_EX + "[LOSS INFO {}th iteration] The validation loss is {:.3f}".format(idx, loss.item()) + Style.RESET_ALL)
+                # print(Fore.BLUE + "The predicitons are {}".format(pred.argmax(1)) + Fore.GREEN + "\n The true labels are {}".format(labels))
                 current_loss += loss.item()
                 current_accuracy += (pred.argmax(1) == labels).float().mean().item()
-                print(Fore.LIGHTRED_EX + "[ACCURACY INFO {}th iteration] The validation accuracy is {:.3f}".format(idx, (pred.argmax(1) == labels).float().mean().item()) + Style.RESET_ALL)
+                # print(Fore.LIGHTRED_EX + "[ACCURACY INFO {}th iteration] The validation accuracy is {:.3f}".format(idx, (pred.argmax(1) == labels).float().mean().item()) + Style.RESET_ALL)
 
             current_loss /= len(self.test_loader)
             current_accuracy /= len(self.test_loader)
+
+            print("\033[101m [VALIDATION INFO ==> {} epoch] \033[0m".format(epoch))
+            print(f"{Fore.LIGHTMAGENTA_EX} The current validation loss is ==> {current_loss}")
+            print(f"{Fore.LIGHTYELLOW_EX} The current validation accuracy is ==> {current_accuracy}")
             
             self.val_accuracy.append(current_accuracy)
             self.val_loss.append(current_loss)
@@ -132,9 +141,11 @@ class TrainModel(nn.Module):
         print("\033[92m [INFO] Starting the tranining process \033[0m ")
         for epoch in range(1, self.epoch + 1):
             train_loss, train_acc = self.train_epoch(epoch)
-            val_loss, val_acc = self.validate_epoch()
+            val_loss, val_acc = self.validate_epoch(epoch)
             self.scheduler.step(val_loss)
-            self.utils.save_best_model(self, val_loss, val_acc)
+            if self.save_models:
+                self.utils.save_best_model(self, val_loss, val_acc)
+
             self.utils.verbose(self, epoch, train_loss, train_acc, val_loss, val_acc)
 
         print("\033[92m [INFO] Training has been completed \033[0m")
@@ -148,5 +159,5 @@ class TrainModel(nn.Module):
 
 if __name__ == '__main__':
     data_path = "/mnt/A4F0E4F6F0E4D01A/Shams Iqbal/VS code/Kaggle/Datasets/animal_dataset/animals/animals"
-    train_model = TrainModel(data_path)
+    train_model = TrainModel(data_path, save_models=False)
     train_model()
