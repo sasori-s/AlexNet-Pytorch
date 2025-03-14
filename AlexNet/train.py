@@ -12,9 +12,10 @@ from training_utils import TrainingUtils
 init(autoreset=True)
 
 class TrainModel(nn.Module):
-    def __init__(self, data_path, momentum=0.9, batch_size=64, weight_decay=0.0005, learning_rate=0.1, epoch=90, num_classes=90, save_models=True):
+    def __init__(self, data_path, momentum=0.9, batch_size=64, weight_decay=0.0005, learning_rate=0.1, epoch=90, num_classes=90, save_models=True, testing_mode=False):
         super(TrainModel, self).__init__()
         self.save_models = save_models
+        self.testing_mode = testing_mode
         self.model_name = 'AlexNet'
         self.data_path = data_path
         self.momentum = momentum
@@ -26,7 +27,7 @@ class TrainModel(nn.Module):
         self.utils = TrainingUtils()
 
         self.load_train_test_data()
-        self.model = Model(num_classes=5)
+        self.model = Model(num_classes=90)
         self.device = torch.device("cuda" if torch.cuda.is_available() else 'cpu')
         self.model = self.model.to(self.device)
         self.cuda_profile = next(self.model.parameters()).is_cuda
@@ -42,7 +43,7 @@ class TrainModel(nn.Module):
 
     
     def load_train_test_data(self):
-        data = LoadDataset(self.data_path, self.data_path, batch_size=self.batch_size, testing_mode=True)
+        data = LoadDataset(self.data_path, self.data_path, batch_size=self.batch_size, testing_mode=self.testing_mode, num_classes=self.num_classes)
         train_loader, test_loader = data.augment_dataset()
         self.train_loader = train_loader
         self.test_loader = test_loader
@@ -72,14 +73,9 @@ class TrainModel(nn.Module):
             # print(f"{Fore.YELLOW} The predicitons are {pred.shape} \n {pred.argmax(1)} {Fore.CYAN} \n The true labeles are {labels.unsqueeze(1).shape}\n {labels}")
             # print("\033[92m [LOSS INFO {}th iteration] The training loss is {:.3f} \033[0m".format(idx, loss.item()))
 
-            # self.see_grad()
-            # self.model.activations['conv1'].register_hook(lambda grad : print(f"{Fore.LIGHTRED_EX} The grad of relu1 is {grad.mean()}"))
-            # self.model.activations['conv5'].register_hook(lambda grad : print(f"{Fore.LIGHTRED_EX} The grad of relu_fc1 is {grad.mean()}"))
-            # self.model.register_full_backward_hook(self.backward_hook)
-
+            
             # self.utils.call_backward_hook(self)
             loss.backward(retain_graph=True)
-            self.utils.plot_grad_flow(self, self.model.named_parameters(), epoch,  idx)
             # print("-------------------ENd of the hooks-------------------")
             torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=1)
 
@@ -89,14 +85,17 @@ class TrainModel(nn.Module):
             current_accuracy += (pred.argmax(1) == labels).float().mean().item()
             # print("\033[101m [ACCURACY INFO {}th iteration] The training accuracy is {} \033[0m".format(idx, (pred.argmax(1) == labels).float().mean().item()))
         
+        # self.utils.plot_grad_flow(self, self.model.named_parameters(), epoch,  idx)
 
-        # self.optimizer.zero_grad()
+        self.model.activations['conv1'].register_hook(lambda grad : print(f"{Fore.LIGHTRED_EX} The grad of relu1 is {grad.mean()}"))
+        self.model.activations['conv5'].register_hook(lambda grad : print(f"{Fore.LIGHTRED_EX} The grad of relu_fc1 is {grad.mean()}"))
+
         current_loss /= len(self.train_loader)
         current_accuracy /= len(self.train_loader)
 
         print("\033[101m [TRAINING INFO ==> {} epoch] \033[0m".format(epoch))
-        print(f"{Fore.LIGHTGREEN_EX} The current training loss is {current_loss}")
-        print(f"{Fore.LIGHTBLUE_EX} The current trianing accuracy is {current_accuracy}")
+        print(f"{Fore.LIGHTGREEN_EX} The current training loss is {current_loss:.3f}")
+        print(f"{Fore.LIGHTBLUE_EX} The current trianing accuracy is {current_accuracy:.3f}")
 
         self.train_accuracy.append(current_accuracy)
         self.train_loss.append(current_loss)
@@ -127,8 +126,8 @@ class TrainModel(nn.Module):
             current_accuracy /= len(self.test_loader)
 
             print("\033[101m [VALIDATION INFO ==> {} epoch] \033[0m".format(epoch))
-            print(f"{Fore.LIGHTMAGENTA_EX} The current validation loss is ==> {current_loss}")
-            print(f"{Fore.LIGHTYELLOW_EX} The current validation accuracy is ==> {current_accuracy}")
+            print(f"{Fore.LIGHTMAGENTA_EX} The current validation loss is ==> {current_loss:.3f}")
+            print(f"{Fore.LIGHTYELLOW_EX} The current validation accuracy is ==> {current_accuracy:.3f}")
             
             self.val_accuracy.append(current_accuracy)
             self.val_loss.append(current_loss)
@@ -159,5 +158,5 @@ class TrainModel(nn.Module):
 
 if __name__ == '__main__':
     data_path = "/mnt/A4F0E4F6F0E4D01A/Shams Iqbal/VS code/Kaggle/Datasets/animal_dataset/animals/animals"
-    train_model = TrainModel(data_path, save_models=False)
+    train_model = TrainModel(data_path, save_models=True, num_classes=10, testing_mode=True)
     train_model()

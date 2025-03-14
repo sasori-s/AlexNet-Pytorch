@@ -14,12 +14,13 @@ init(autoreset=True)
 device = torch.device("cuda" if torch.cuda.is_available() else 'cpu')
 
 class LoadLessDataset(datasets.ImageFolder):
-    def __init__(self, root=None,  transform=None):
+    def __init__(self, root=None,  transform=None, num_classes=10):
+        self.num_classes = num_classes
         super(LoadLessDataset, self).__init__(root=root, transform=transform)
         
 
     def find_classes(self, directory):
-        limit = 5
+        limit = self.num_classes
         classes = []
 
         for d in os.scandir(directory):
@@ -34,11 +35,12 @@ class LoadLessDataset(datasets.ImageFolder):
 
 
 class LoadDataset():
-    def __init__(self, train_path, test_path=None, batch_size=128, testing_mode=False):
+    def __init__(self, train_path, test_path=None, batch_size=128, testing_mode=False, num_classes=90):
         self.train_path = train_path
         self.test_path = test_path
         self.batch_size = batch_size
         self.testing_mode = testing_mode
+        self.num_classes = num_classes
 
 
     def augment_dataset(self):
@@ -59,8 +61,8 @@ class LoadDataset():
         ])
 
         if self.testing_mode:
-            train_dataset = LoadLessDataset(self.train_path, transform=train_transform)
-            test_dataset = LoadLessDataset(self.test_path, transform=test_transform)
+            train_dataset = LoadLessDataset(self.train_path, transform=train_transform, num_classes=self.num_classes)
+            test_dataset = LoadLessDataset(self.test_path, transform=test_transform, num_classes=self.num_classes)
 
         else:
             train_dataset = datasets.ImageFolder(self.train_path, transform=train_transform)
@@ -190,7 +192,7 @@ class ConvertToFloat:
 
 if __name__ == '__main__':
     data_path = '/mnt/A4F0E4F6F0E4D01A/Shams Iqbal/VS code/Kaggle/Datasets/animal_dataset/animals/animals'
-    load_dataset = LoadDataset(data_path, data_path, testing_mode=True)
+    load_dataset = LoadDataset(data_path, data_path, testing_mode=True, num_classes=10)
     train_loader, test_loader = load_dataset.augment_dataset()
     
     it = iter(train_loader)
