@@ -73,8 +73,8 @@ class LoadDataset():
         print("\033[92m", len(test_dataset), "\033[0m")
         # print(f"{Fore.GREEN} {test_dataset.classes}")
 
-        self.train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True, pin_memory=True)
-        self.test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=self.batch_size, shuffle=False, pin_memory=True)
+        self.train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True, pin_memory=True, num_workers=4)
+        self.test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=self.batch_size, shuffle=False, pin_memory=True, num_workers=4)
 
         # self._show_images(test_dataset=test_dataset)
         # self._show_images(train_dataset=train_dataset)
@@ -190,6 +190,52 @@ class ConvertToFloat:
         return list_to_return
 
 
+class CUDAPrefetcher:
+    """Use the CUDA side to accelerate data reading.
+
+    Args:
+        dataloader (DataLoader): Data loader. Combines a dataset and a sampler, and provides an iterable over the given dataset.
+        device (torch.device): Specify running device.
+    """
+
+    def __init__(self, dataloader, device: torch.device):
+        self.batch_data = None
+        self.original_dataloader = dataloader
+        self.device = device
+
+        self.data = iter(dataloader)
+        self.stream = torch.cuda.Stream()
+        self.preload()
+
+    def preload(self):
+        try:
+            self.batch_data = next(self.data)
+        except StopIteration:
+            self.batch_data = None
+            return None
+
+        with torch.cuda.stream(self.stream):
+            # print(self.batch_data[1])
+            for i, tensor_data_label in enumerate(self.batch_data):
+                if torch.is_tensor(tensor_data_label[0]):
+                    self.batch_data[0] = self.batch_data[0].to(self.device, non_blocking=True)
+                if torch.is_tensor(tensor_data_label[1]):
+                    self.batch_data[1] = self.batch_data[1].to(self.device, non_blocking=True)
+
+    def next(self):
+        torch.cuda.current_stream().wait_stream(self.stream)
+        batch_data = self.batch_data
+        self.preload()
+        return batch_data
+
+    def reset(self):
+        self.data = iter(self.original_dataloader)
+        self.preload()
+
+    def __len__(self) -> int:
+        return len(self.original_dataloader)
+
+
 if __name__ == '__main__':
     data_path = '/mnt/A4F0E4F6F0E4D01A/Shams Iqbal/VS code/Kaggle/Datasets/animal_dataset/animals/animals'
     load_dataset = LoadDataset(data_path, data_path, testing_mode=True, num_classes=10)
@@ -197,5 +243,11 @@ if __name__ == '__main__':
     
     it = iter(train_loader)
     image, label = next(it)
+
     print(image.shape)
-    print(label)
+    print(label.device)
+
+    train_gpu_fethcer = CUDAPrefetcher(train_loader, device)
+    train_gpu_fethcer.next()
+    print(train_gpu_fethcer.batch_data[0].device)
+    print(train_gpu_fethcer.batch_data[1].device)
