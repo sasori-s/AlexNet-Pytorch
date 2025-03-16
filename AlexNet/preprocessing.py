@@ -35,12 +35,13 @@ class LoadLessDataset(datasets.ImageFolder):
 
 
 class LoadDataset():
-    def __init__(self, train_path, test_path=None, batch_size=128, testing_mode=False, num_classes=90):
+    def __init__(self, train_path, test_path=None, batch_size=128, testing_mode=False, num_classes=90, with_gpu=False):
         self.train_path = train_path
         self.test_path = test_path
         self.batch_size = batch_size
         self.testing_mode = testing_mode
         self.num_classes = num_classes
+        self.with_gpu = with_gpu
 
 
     def augment_dataset(self):
@@ -72,13 +73,24 @@ class LoadDataset():
         print("\033[92m", len(train_dataset), "\033[0m")
         print("\033[92m", len(test_dataset), "\033[0m")
         # print(f"{Fore.GREEN} {test_dataset.classes}")
+        
+        if not self.with_gpu:
+            self.train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True, pin_memory=True, num_workers=4)
+            self.test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=self.batch_size, shuffle=False, pin_memory=True, num_workers=4)
 
-        self.train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True, pin_memory=True, num_workers=4)
-        self.test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=self.batch_size, shuffle=False, pin_memory=True, num_workers=4)
+            # self._show_images(test_dataset=test_dataset)
+            # self._show_images(train_dataset=train_dataset)
+            return self.train_loader, self.test_loader
 
-        # self._show_images(test_dataset=test_dataset)
-        # self._show_images(train_dataset=train_dataset)
-        return self.train_loader, self.test_loader
+        else:
+            train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True, pin_memory=True, num_workers=4)
+            test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=self.batch_size, shuffle=False, pin_memory=True, num_workers=4)
+
+            train_prefetcher = CUDAPrefetcher(train_loader, device)
+            test_prefetcher = CUDAPrefetcher(test_loader, device)
+
+            return train_prefetcher, test_prefetcher
+
     
 
     def no_augment_dataset(self):
@@ -190,6 +202,7 @@ class ConvertToFloat:
         return list_to_return
 
 
+#This class was taken from https://github.com/Lornatang/AlexNet-PyTorch/blob/main/dataset.py and modified to fit my needs
 class CUDAPrefetcher:
     """Use the CUDA side to accelerate data reading.
 
@@ -248,6 +261,6 @@ if __name__ == '__main__':
     print(label.device)
 
     train_gpu_fethcer = CUDAPrefetcher(train_loader, device)
-    train_gpu_fethcer.next()
-    print(train_gpu_fethcer.batch_data[0].device)
-    print(train_gpu_fethcer.batch_data[1].device)
+    train_data = train_gpu_fethcer.next()
+    print(train_data[0].device)
+    print(train_data[1].device)
