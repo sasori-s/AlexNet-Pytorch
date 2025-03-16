@@ -9,8 +9,8 @@ init(autoreset=True)
 class TrainingUtils():
     def __init__(self):
         data_path = "/mnt/A4F0E4F6F0E4D01A/Shams Iqbal/VS code/Kaggle/Datasets/animal_dataset/animals/animals"
+        self.grad_plot_save_path = "AlexNet/training_plots/gradients"
         self.plot_save_path = "AlexNet/training_plots"
-        
     
     @staticmethod
     def backward_hook(model_layer, grad_input, grad_output):
@@ -89,14 +89,21 @@ class TrainingUtils():
                 }, save_path
             )
 
+            self.plot_accuracy(model.train_accuracy, model.val_accuracy)
+            self.plot_loss(model.train_loss, model.val_loss)
+
         else:
             model.not_improved += 1
             print("\033[91m [PATIENCE INFO] The model has not been improved for {} epochs \033[0m".format(model.not_improved))
             if model.not_improved >= model.patience:
                 print("\033[91m [STOP INFO] Stopping the trainining after {} epochs\n Saving the final model \033[0m".format(model.patience))
                 self.save_final_model(model)
+
+                self.plot_accuracy(model.train_accuracy, model.val_accuracy)
+                self.plot_loss(model.train_loss, model.val_loss)
+
                 exit()
-    
+
     
     def save_final_model(self, model : object):
         print("\033[98m [SAVING INFO] Saving the final model")
@@ -110,6 +117,9 @@ class TrainingUtils():
                 'accuracy' : model.best_accuracy
             }, save_path
         )
+
+        self.plot_accuracy(model.train_accuracy, model.val_accuracy)
+        self.plot_loss(model.train_loss, model.val_loss)
 
 
     def verbose(self, model : object,  epoch, train_loss, train_acc, val_loss, val_acc):
@@ -159,8 +169,29 @@ class TrainingUtils():
         plt.title("Gradient flow")
         plt.grid(True)
         plt.tight_layout()
-        plot_name = os.path.join(self.plot_save_path, f"gradient_flow_{epoch}_{idx}.png")
+        plot_name = os.path.join(self.grad_plot_save_path, f"gradient_flow_{epoch}_{idx}.png")
         plt.savefig(plot_name)
-        # plt.legend([Line2D([0], [0], color="c", lw=4),
-        #             Line2D([0], [0], color="b", lw=4),
-        #             Line2D([0], [0], color="k", lw=4)], ['max-gradient', 'mean-gradient', 'zero-gradient'])
+
+
+    def plot_loss(self, train_loss, val_loss):
+        plt.figure(figsize=(10, 8))
+        plt.plot(train_loss, label='Training Loss')
+        plt.plot(val_loss, label='Validation Loss')
+        plt.xlabel('Epochs')
+        plt.ylabel('Loss')
+        plt.title(f"Training and Validation Loss")
+        plt.legend()
+        plt.grid(True)
+        plt.savefig(os.path.join(self.plot_save_path, "loss.png"))
+
+    
+    def plot_accuracy(self, train_accuracy, val_accuracy):
+        plt.figure(figsize=(10, 8))
+        plt.plot(train_accuracy, label='Training Accuracy')
+        plt.plot(val_accuracy, label='Validation Accuracy')
+        plt.xlabel('Epochs')
+        plt.ylabel('Accuracy')
+        plt.title(f"Training and Validation Accuracy")
+        plt.legend()
+        plt.grid(True)
+        plt.savefig(os.path.join(self.plot_save_path, "accuracy.png"))

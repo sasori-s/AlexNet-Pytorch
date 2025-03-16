@@ -47,10 +47,6 @@ class TrainModel(nn.Module):
         train_loader, test_loader = data.augment_dataset()
         self.train_loader = train_loader
         self.test_loader = test_loader
-        # self.classes = test_loader.dataset.classes
-        # print(f"{Fore.LIGHTMAGENTA_EX}  {train_loader.dataset.classes}")
-        # print(f"{Fore.LIGHTMAGENTA_EX}  {test_loader.dataset.classes}")
-
 
         
     def to_device(self, batch):
@@ -62,30 +58,20 @@ class TrainModel(nn.Module):
         self.model.train()
         current_accuracy, current_loss = 0.0, 0.0
 
-        # initial_state = self.utils.save_current_parameters(self)
-
         for idx, batch in tqdm(enumerate(self.train_loader), desc='Training'):
 
             images, labels = self.to_device(batch)
             pred = self.model(images)
             loss = self.loss(pred, labels)
 
-            # print(f"{Fore.YELLOW} The predicitons are {pred.shape} \n {pred.argmax(1)} {Fore.CYAN} \n The true labeles are {labels.unsqueeze(1).shape}\n {labels}")
-            # print("\033[92m [LOSS INFO {}th iteration] The training loss is {:.3f} \033[0m".format(idx, loss.item()))
-
-            
-            # self.utils.call_backward_hook(self)
             loss.backward(retain_graph=True)
-            # print("-------------------ENd of the hooks-------------------")
             torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=1)
 
             self.optimizer.step()
             self.optimizer.zero_grad()
             current_loss += loss.item()
             current_accuracy += (pred.argmax(1) == labels).float().mean().item()
-            # print("\033[101m [ACCURACY INFO {}th iteration] The training accuracy is {} \033[0m".format(idx, (pred.argmax(1) == labels).float().mean().item()))
         
-        # self.utils.plot_grad_flow(self, self.model.named_parameters(), epoch,  idx)
 
         self.model.activations['conv1'].register_hook(lambda grad : print(f"{Fore.LIGHTRED_EX} The grad of relu1 is {grad.mean()}"))
         self.model.activations['conv5'].register_hook(lambda grad : print(f"{Fore.LIGHTRED_EX} The grad of relu_fc1 is {grad.mean()}"))
@@ -99,8 +85,6 @@ class TrainModel(nn.Module):
 
         self.train_accuracy.append(current_accuracy)
         self.train_loss.append(current_loss)
-        
-        # self.utils.compare_parameters(self, initial_state)
 
         return current_loss, current_accuracy
         #Do not forget to include the scheduler.step() in the run funciton. 
@@ -116,11 +100,9 @@ class TrainModel(nn.Module):
                 images, labels = self.to_device(batch)
                 pred = self.model(images)
                 loss = self.loss(pred, labels)
-                # print(Fore.LIGHTRED_EX + "[LOSS INFO {}th iteration] The validation loss is {:.3f}".format(idx, loss.item()) + Style.RESET_ALL)
-                # print(Fore.BLUE + "The predicitons are {}".format(pred.argmax(1)) + Fore.GREEN + "\n The true labels are {}".format(labels))
+
                 current_loss += loss.item()
                 current_accuracy += (pred.argmax(1) == labels).float().mean().item()
-                # print(Fore.LIGHTRED_EX + "[ACCURACY INFO {}th iteration] The validation accuracy is {:.3f}".format(idx, (pred.argmax(1) == labels).float().mean().item()) + Style.RESET_ALL)
 
             current_loss /= len(self.test_loader)
             current_accuracy /= len(self.test_loader)
