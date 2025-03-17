@@ -41,7 +41,6 @@ class TrainingUtils():
 
 
     def save_current_parameters(self, model : object):
-        # print(f"{Fore.LIGHTMAGENTA_EX} {[name for name, param in model.named_parameters()]}")
         initial_model = {} 
         for name, param in model.named_parameters():
             if param.grad is not None:
@@ -85,12 +84,10 @@ class TrainingUtils():
                     'model_state_dict' : model.model.state_dict(),
                     'optimizer_state_dict' : model.optimizer.state_dict(),
                     'loss' : current_loss,
-                    'accuracy' : current_accuracy
+                    'accuracy' : current_accuracy,
+                    'classes' : model.classes
                 }, save_path
             )
-
-            self.plot_accuracy(model.train_accuracy, model.val_accuracy)
-            self.plot_loss(model.train_loss, model.val_loss)
 
         else:
             model.not_improved += 1
@@ -98,10 +95,6 @@ class TrainingUtils():
             if model.not_improved >= model.patience:
                 print("\033[91m [STOP INFO] Stopping the trainining after {} epochs\n Saving the final model \033[0m".format(model.patience))
                 self.save_final_model(model)
-
-                self.plot_accuracy(model.train_accuracy, model.val_accuracy)
-                self.plot_loss(model.train_loss, model.val_loss)
-
                 exit()
 
     
@@ -114,12 +107,10 @@ class TrainingUtils():
                 'model_state_dict' : model.model.state_dict(),
                 'optimizer_state_dict' : model.optimizer.state_dict(),
                 'loss' : model.best_loss,
-                'accuracy' : model.best_accuracy
+                'accuracy' : model.best_accuracy,
+                'classes' : model.classes
             }, save_path
         )
-
-        self.plot_accuracy(model.train_accuracy, model.val_accuracy)
-        self.plot_loss(model.train_loss, model.val_loss)
 
 
     def verbose(self, model : object,  epoch, train_loss, train_acc, val_loss, val_acc):

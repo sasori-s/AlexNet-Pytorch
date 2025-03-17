@@ -47,6 +47,7 @@ class TrainModel(nn.Module):
         train_loader, test_loader = data.augment_dataset()
         self.train_loader = train_loader
         self.test_loader = test_loader
+        self.classes = train_loader.dataset.classes
 
         
     def to_device(self, batch):
@@ -126,13 +127,19 @@ class TrainModel(nn.Module):
             self.scheduler.step(val_loss)
             if self.save_models:
                 self.utils.save_best_model(self, val_loss, val_acc)
+            
+            if epoch % 10 == 0:
+                self.utils.plot_accuracy(self.train_accuracy, self.val_accuracy)
+                self.utils.plot_loss(self.train_loss, self.val_loss)
 
             self.utils.verbose(self, epoch, train_loss, train_acc, val_loss, val_acc)
 
         print("\033[92m [INFO] Training has been completed \033[0m")
         self.utils.save_final_model(self)
+
+        print(f"{Fore.GREEN} The model was trained on {self.classes} classes")
         return self.train_loss, self.train_accuracy, self.val_loss, self.val_accuracy
-    
+
 
     def __call__(self):
         return self.run()
