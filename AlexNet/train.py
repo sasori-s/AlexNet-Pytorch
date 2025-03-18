@@ -27,12 +27,12 @@ class TrainModel(nn.Module):
         self.utils = TrainingUtils()
 
         self.load_train_test_data()
-        self.model = Model(num_classes=90)
+        self.model = Model(num_classes=self.num_classes)
         self.device = torch.device("cuda" if torch.cuda.is_available() else 'cpu')
         self.model = self.model.to(self.device)
         self.cuda_profile = next(self.model.parameters()).is_cuda
         self.optimizer = torch.optim.SGD(self.model.parameters(), lr=self.learning_rate, momentum=self.momentum, weight_decay=self.weight_decay)
-        self.scheduler = ReduceLROnPlateau(self.optimizer, mode='min', factor=0.1, patience=10)
+        self.scheduler = ReduceLROnPlateau(self.optimizer, mode='min', factor=0.1, patience=15)
         self.loss = nn.CrossEntropyLoss().cuda()
         self.best_loss = float('inf')
         self.best_accuracy = 0.0

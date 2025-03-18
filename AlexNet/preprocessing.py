@@ -34,14 +34,29 @@ class LoadLessDataset(datasets.ImageFolder):
         return classes, classes_to_idx
 
 
+#this class is for test.py
+class LoadTestData(datasets.ImageFolder):
+    def __init__(self, root, test_classes, transform=None):
+        self.test_classes = test_classes
+        super(LoadTestData, self).__init__(root=root, transform=transform)
+
+    
+    def find_classes(self, directory):
+        classes = self.test_classes
+        classes_to_idx = {name : i for i, name in enumerate(classes)}
+        return classes, classes_to_idx
+
+
 class LoadDataset():
-    def __init__(self, train_path, test_path=None, batch_size=128, testing_mode=False, num_classes=90, with_gpu=False):
+    def __init__(self, train_path, test_path=None, batch_size=128, testing_mode=False, num_classes=90, with_gpu=False, is_test=False, test_classes=None):
         self.train_path = train_path
         self.test_path = test_path
         self.batch_size = batch_size
         self.testing_mode = testing_mode
         self.num_classes = num_classes
         self.with_gpu = with_gpu
+        self.is_test = is_test
+        self.test_classes = test_classes
 
 
     def augment_dataset(self):
@@ -64,6 +79,12 @@ class LoadDataset():
         if self.testing_mode:
             train_dataset = LoadLessDataset(self.train_path, transform=train_transform, num_classes=self.num_classes)
             test_dataset = LoadLessDataset(self.test_path, transform=test_transform, num_classes=self.num_classes)
+        
+        #This is for test.py
+        if self.is_test:
+            test_dataset = LoadTestData(self.train_path, self.test_classes, transform=test_transform)
+            self.test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=self.batch_size, shuffle=False, pin_memory=True, num_workers=4)
+            return self.test_loader
 
         else:
             train_dataset = datasets.ImageFolder(self.train_path, transform=train_transform)
@@ -88,7 +109,6 @@ class LoadDataset():
 
             return train_prefetcher, test_prefetcher
 
-    
 
     def no_augment_dataset(self):
         train_transform = v2.Compose([
