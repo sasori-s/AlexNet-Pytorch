@@ -83,6 +83,7 @@ class LoadDataset():
         #This is for test.py
         if self.is_test:
             test_dataset = LoadTestData(self.train_path, self.test_classes, transform=test_transform)
+            test_dataset = MyDataSet(test_dataset)
             self.test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=self.batch_size, shuffle=False, pin_memory=True, num_workers=4)
             return self.test_loader
 
